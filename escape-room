@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Virtual Escape Room – Secret Lab</title>
+  <style>
+    :root{
+      --bg:#070b16; --panel:#0d1326; --ink:#e8ecff; --muted:#9aa3c7; --accent:#7cf3c8; --accent2:#6cc8ff; --border:#1b2446; --good:#22c55e; --bad:#ef4444;
+      --radius:16px; --shadow:0 12px 40px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink);
+      background:radial-gradient(1200px 700px at 10% 10%,#0f1b3e 0%,#070b16 55%,#050812 100%) fixed;}
+    header{position:sticky; top:0; z-index:50; border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(5,9,20,.85), rgba(5,9,20,0)); backdrop-filter:saturate(130%) blur(6px)}
+    .wrap{max-width:1000px; margin:0 auto; padding:20px}
+
+    .hero{display:grid; grid-template-columns:1.2fr .8fr; gap:20px; align-items:center}
+    .card{background:linear-gradient(180deg,#0f1733,#0b1026); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .pad{padding:20px}
+    h1{margin:0 0 8px; font-size:28px}
+    h2{margin:0 0 8px}
+    p{margin:0 0 10px}
+    .muted{color:var(--muted)}
+    .progress{display:flex;flex-wrap:wrap; gap:8px; align-items:center}
+    .pill{padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:var(--muted); font-weight:700}
+    .pill.done{color:#001a10;background:linear-gradient(180deg,#a7f3d0,#34d399); border-color:#34d399}
+    .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#001a10; font-weight:800; border:none; border-radius:12px; padding:10px 14px; cursor:pointer}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    section{margin:24px 0; position:relative}
+    .title{display:flex; align-items:center; gap:10px}
+    .num{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;border:1px solid var(--border);background:#0b122c;color:var(--muted);font-weight:800}
+    .locked .veil{position:absolute; inset:0; border-radius:var(--radius); background:rgba(7,11,22,.65); display:grid; place-items:center}
+    .badge{background:#0b122c; border:1px solid var(--border); padding:6px 10px; border-radius:999px; font-weight:800}
+
+    /* Riddle input */
+    .row{display:grid; grid-template-columns:1fr 140px; gap:8px; align-items:center}
+    input[type="text"], input[type="number"], input[type="password"]{height:44px; border-radius:10px; border:1px solid #27335d; background:#0d1533; color:var(--ink); padding:0 12px; font-weight:700}
+
+    /* Lights Out */
+    .lo{display:grid; grid-template-columns:repeat(5,56px); gap:8px; width:max-content; background:#0b122c; border:1px solid var(--border); border-radius:12px; padding:10px}
+    .lo button{width:56px;height:56px;border-radius:10px;border:1px solid #27335d;background:#0f193f;cursor:pointer}
+    .lo .on{background:#1e346a; box-shadow:inset 0 0 0 2px #2a4f96}
+
+    /* Differences */
+    .dif-wrap{display:flex; gap:16px; flex-wrap:wrap}
+    .dif{background:#0b122c; border:1px solid var(--border); border-radius:12px; padding:10px}
+    .dif svg{display:block}
+
+    /* Door */
+    .flag{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#061221; padding:14px; border:1px dashed #1a2b51; border-radius:12px; color:#b9ffce}
+
+    .grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:16px}
+    @media (max-width: 820px){ .hero{grid-template-columns:1fr} .grid2{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="hero card pad">
+        <div>
+          <h1>Secret Lab – Virtual Escape Room</h1>
+          <p class="muted">You awake in a quiet laboratory. Emergency lights hum. Three locks bar your way to the exit. Crack each lock to open the door.</p>
+          <div class="progress" id="progress">
+            <span class="pill" id="p1">Room 1</span>
+            <span class="pill" id="p2">Room 2</span>
+            <span class="pill" id="p3">Room 3</span>
+            <span class="pill" id="p4">Exit Door</span>
+          </div>
+          <p class="muted" style="margin-top:6px">Timer: <span id="timer">00:00</span></p>
+        </div>
+        <div class="grid2">
+          <div class="card pad">
+            <h3>How to play</h3>
+            <ul class="muted" style="margin:0 0 10px 18px">
+              <li>Solve each room to earn a 4‑character <b>code</b>.</li>
+              <li>Rooms unlock in order. Hints included.</li>
+              <li>Enter all codes at the Exit Door to escape.</li>
+            </ul>
+            <button class="btn" onclick="document.getElementById('r1').scrollIntoView({behavior:'smooth'})">Begin →</button>
+          </div>
+          <div class="card pad">
+            <h3>Customize</h3>
+            <p class="muted">Open the <code>ESC</code> config in the script to change answers, codes, or the final flag. Everything is in this one file.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- =============== ROOM 1: The Desk (Riddle) =============== -->
+    <section id="r1" class="card pad" aria-label="Room 1: Desk">
+      <div class="title"><span class="num">1</span><h2>The Desk</h2></div>
+      <p class="muted">On the desk lies a note under a UV lamp. Letters appear:</p>
+      <pre class="flag">“I can be written. I can be spoken. I can be exposed. I can be broken.”</pre>
+      <details>
+        <summary>Hint</summary>
+        <p class="muted">It’s four letters and central to this lab.
+        </p>
+      </details>
+      <div class="row" style="max-width:560px">
+        <input id="riddleAns" type="text" placeholder="enter the answer" />
+        <button class="btn" id="riddleBtn">Unlock</button>
+      </div>
+      <p class="muted" id="riddleMsg" style="margin-top:8px"></p>
+    </section>
+
+    <!-- =============== ROOM 2: Security Console (Lights Out) =============== -->
+    <section id="r2" class="card pad locked" aria-label="Room 2: Console" style="position:relative">
+      <div class="veil"><span class="badge">Locked – finish Room 1</span></div>
+      <div class="title"><span class="num">2</span><h2>Security Console</h2></div>
+      <p class="muted">The console is stuck in a diagnostic loop. Toggle the grid so all tiles are dark.</p>
+      <div class="lo" id="lo"></div>
+      <p class="muted" id="loMsg" style="margin-top:8px"></p>
+    </section>
+
+    <!-- =============== ROOM 3: Specimen Vault (Spot the differences) =============== -->
+    <section id="r3" class="card pad locked" aria-label="Room 3: Vault" style="position:relative">
+      <div class="veil"><span class="badge">Locked – finish Room 2</span></div>
+      <div class="title"><span class="num">3</span><h2>Specimen Vault</h2></div>
+      <p class="muted">The vault shows two camera feeds. Five subtle differences unlock the latch. Tap the differences on the right image.</p>
+      <div class="dif-wrap">
+        <div class="dif"><svg width="260" height="180" viewBox="0 0 260 180" xmlns="http://www.w3.org/2000/svg" aria-label="left">
+          <rect x="0" y="0" width="260" height="180" rx="14" fill="#0c1330" stroke="#27335d"/>
+          <circle cx="60" cy="60" r="28" fill="#6cc8ff"/>
+          <rect x="120" y="40" width="90" height="40" rx="8" fill="#34d399"/>
+          <polygon points="40,140 80,120 120,140 80,160" fill="#a78bfa"/>
+          <rect x="170" y="115" width="40" height="40" rx="6" fill="#f59e0b"/>
+          <text x="18" y="25" fill="#a7b0d9" font-size="14" font-family="monospace">VAULT A</text>
+        </svg></div>
+        <div class="dif" style="position:relative">
+          <svg id="svgr" width="260" height="180" viewBox="0 0 260 180" xmlns="http://www.w3.org/2000/svg" aria-label="right">
+            <rect x="0" y="0" width="260" height="180" rx="14" fill="#0c1330" stroke="#27335d"/>
+            <circle cx="60" cy="60" r="24" fill="#6cc8ff"/>
+            <rect x="120" y="40" width="90" height="40" rx="8" fill="#34d399"/>
+            <polygon points="40,140 80,120 120,140 80,160" fill="#a78bfa"/>
+            <rect x="172" y="115" width="40" height="36" rx="6" fill="#f59e0b"/>
+            <text x="18" y="25" fill="#a7b0d9" font-size="16" font-family="monospace">VAULT A</text>
+            <rect x="10" y="10" width="20" height="8" rx="2" fill="#ef4444"/>
+            <circle cx="120" cy="150" r="6" fill="#22c55e"/>
+          </svg>
+          <div id="targets" style="position:absolute; inset:0"></div>
+        </div>
+      </div>
+      <p class="muted" id="difMsg" style="margin-top:8px"></p>
+    </section>
+
+    <!-- =============== EXIT DOOR (Final) =============== -->
+    <section id="exit" class="card pad locked" aria-label="Exit Door" style="position:relative">
+      <div class="veil"><span class="badge">Locked – finish Room 3</span></div>
+      <div class="title"><span class="num">4</span><h2>Exit Door</h2></div>
+      <p class="muted">Enter the three room codes to release the magnetic locks.</p>
+      <div class="row" style="max-width:560px">
+        <input id="k1" placeholder="Room 1 code" maxlength="4"/>
+        <input id="k2" placeholder="Room 2 code" maxlength="4"/>
+      </div>
+      <div class="row" style="max-width:560px; margin-top:8px">
+        <input id="k3" placeholder="Room 3 code" maxlength="4"/>
+        <button class="btn" id="openDoor">Open Door</button>
+      </div>
+      <p class="muted" id="doorMsg" style="margin-top:8px"></p>
+      <pre class="flag" id="escapeMsg" style="display:none; margin-top:14px">ESCAPE{SECRET-LAB-CLEARED}</pre>
+    </section>
+
+    <section class="muted" style="margin:26px 0 60px">
+      <details>
+        <summary>Admin quick-edit</summary>
+        <p>Edit the <code>ESC</code> object in the script to change answers and codes. You can also swap the SVG in Room 3 and adjust clickable target coordinates.</p>
+      </details>
+    </section>
+  </main>
+
+  <script>
+    // ========= Config (edit me) =========
+    const ESC = {
+      riddle: { answer: 'code', code: 'R1E2' },
+      lightsOut: { size: 5, start: [1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1], code: 'C0N5' },
+      differences: { targets:[ {x:60,y:60,r:16}, {x:192,y:133,r:18}, {x:30,y:14,r:12}, {x:120,y:150,r:12}, {x:40,y:140,r:20} ], code: 'V7LT' },
+      finalFlag: 'ESCAPE{SECRET-LAB-CLEARED}'
+    };
+
+    // ========= Helpers =========
+    const $ = s => document.querySelector(s);
+    const unlock = id => { const s=$(id); s.classList.remove('locked'); s.querySelector('.veil')?.remove(); };
+    const markDone = n => { const p=$('#p'+n); p?.classList.add('done'); if(p) p.textContent = (n<4?`Room ${n}`:'Exit Door')+' ✓'; };
+
+    // Timer
+    const t0 = Date.now(); const tEl = $('#timer'); setInterval(()=>{ const s=Math.floor((Date.now()-t0)/1000); const m=Math.floor(s/60), r=s%60; tEl.textContent=`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }, 1000);
+
+    // ========= Room 1: Riddle =========
+    (function(){
+      const btn=$('#riddleBtn'), input=$('#riddleAns'), msg=$('#riddleMsg');
+      btn.addEventListener('click',()=>{
+        const v=(input.value||'').trim().toLowerCase();
+        if(v===ESC.riddle.answer){ msg.innerHTML=`Correct. Code: <b>${ESC.riddle.code}</b>`; markDone(1); unlock('#r2'); }
+        else msg.textContent='Nope.';
+      });
+    })();
+
+    // ========= Room 2: Lights Out =========
+    ;(function(){
+      const root=$('#lo'), msg=$('#loMsg');
+      const N=ESC.lightsOut.size; const st=ESC.lightsOut.start.slice();
+      function idx(x,y){ return y*N+x; }
+      function render(){ root.innerHTML=''; for(let y=0;y<N;y++){ for(let x=0;x<N;x++){ const i=idx(x,y); const b=document.createElement('button'); if(st[i]) b.classList.add('on'); b.addEventListener('click',()=>toggle(x,y)); root.appendChild(b); } } }
+      function toggle(x,y){ [[x,y],[x-1,y],[x+1,y],[x,y-1],[x,y+1]].forEach(([a,b])=>{ if(a>=0&&a<N&&b>=0&&b<N){ const i=idx(a,b); st[i]=st[i]?0:1; }}); render(); check(); }
+      function check(){ if(st.every(v=>v===0)){ msg.innerHTML=`Diagnostics cleared. Code: <b>${ESC.lightsOut.code}</b>`; markDone(2); unlock('#r3'); } }
+      render(); msg.textContent='Turn all tiles off';
+    })();
+
+    // ========= Room 3: Differences =========
+    ;(function(){
+      const wrap=$('#targets'), msg=$('#difMsg');
+      const found=new Set();
+      ESC.differences.targets.forEach((t,idx)=>{
+        const z=document.createElement('div'); z.style.position='absolute'; z.style.left=(t.x-t.r)+'px'; z.style.top=(t.y-t.r)+'px'; z.style.width=(t.r*2)+'px'; z.style.height=(t.r*2)+'px'; z.style.borderRadius='50%'; z.style.cursor='pointer';
+        z.addEventListener('click',()=>{ if(found.has(idx))return; found.add(idx); z.style.outline='2px solid #34d399'; z.style.boxShadow='0 0 0 6px rgba(52,211,153,.25)'; msg.textContent=`Found ${found.size}/5`; if(found.size===5){ msg.innerHTML=`Vault unlocked. Code: <b>${ESC.differences.code}</b>`; markDone(3); unlock('#exit'); } });
+        wrap.appendChild(z);
+      });
+      msg.textContent='Found 0/5';
+    })();
+
+    // ========= Exit Door =========
+    ;(function(){
+      const btn=$('#openDoor'), msg=$('#doorMsg'), out=$('#escapeMsg');
+      btn.addEventListener('click',()=>{
+        const got=[$('#k1').value,$('#k2').value,$('#k3').value].map(s=>s.trim().toUpperCase());
+        const expect=[ESC.riddle.code, ESC.lightsOut.code, ESC.differences.code];
+        if(got.join('|')===expect.join('|')){ msg.textContent='Locks released!'; out.textContent=ESC.finalFlag; out.style.display='block'; markDone(4); }
+        else { msg.textContent='Codes incorrect.'; out.style.display='none'; }
+      });
+    })();
+  </script>
+</body>
+</html>
