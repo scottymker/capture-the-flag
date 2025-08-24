@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unlock HQ – Escape Room #2: The Archives</title>
+  <meta name="description" content="A tougher, number‑heavy escape room with reading-based clues and logic puzzles." />
+  <link rel="icon" href="assets/unlockhq_web.png" />
+  <style>
+    :root{ --bg:#070b16; --panel:#0d1326; --ink:#e8ecff; --muted:#9aa3c7; --accent:#7cf3c8; --accent2:#6cc8ff; --border:#1b2446; --good:#22c55e; --bad:#ef4444; --radius:16px; --shadow:0 12px 40px rgba(0,0,0,.35); }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink); background:radial-gradient(1200px 700px at 10% 10%,#0f1b3e 0%,#070b16 55%,#050812 100%) fixed}
+    header{position:sticky; top:0; z-index:50; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(5,9,20,.85), rgba(5,9,20,0)); backdrop-filter:saturate(130%) blur(6px)}
+    .wrap{max-width:1000px; margin:0 auto; padding:20px}
+    .card{background:linear-gradient(180deg,#0f1733,#0b1026); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .pad{padding:20px}
+    .muted{color:var(--muted)}
+    .title{display:flex; align-items:center; gap:10px}
+    .num{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;border:1px solid var(--border);background:#0b122c;color:var(--muted);font-weight:800}
+    .pill{padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:var(--muted); font-weight:700}
+    .pill.done{color:#001a10;background:linear-gradient(180deg,#a7f3d0,#34d399); border-color:#34d399}
+    .row{display:grid; grid-template-columns:1fr 140px; gap:8px; align-items:center}
+    input[type="text"]{height:44px; border-radius:10px; border:1px solid #27335d; background:#0d1533; color:var(--ink); padding:0 12px; font-weight:700}
+    .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#001a10; font-weight:800; border:none; border-radius:12px; padding:10px 14px; cursor:pointer}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    .locked .veil{position:absolute; inset:0; border-radius:var(--radius); background:rgba(7,11,22,.65); display:grid; place-items:center}
+    .badge{background:#0b122c; border:1px solid var(--border); padding:6px 10px; border-radius:999px; font-weight:800}
+    pre.doc{background:#0b122c; border:1px solid var(--border); border-radius:12px; padding:14px; overflow:auto; white-space:pre-wrap; line-height:1.35}
+    mark{background:rgba(124,243,200,.15); color:inherit; padding:0 3px; border-radius:4px}
+    table.ledger{width:100%; border-collapse:collapse; background:#0b122c; border-radius:12px; overflow:hidden}
+    table.ledger th, table.ledger td{border:1px solid #27335d; padding:8px 10px; text-align:right}
+    table.ledger th{background:#0f1733; text-align:left}
+    .grid5{display:grid; grid-template-columns:repeat(5,56px); gap:8px; width:max-content}
+    .cell{height:56px; display:grid; place-items:center; border-radius:10px; border:1px solid #27335d; background:#0f193f; font-weight:800}
+    footer{opacity:.85; text-align:center; margin:30px 0 20px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="card pad" style="display:grid; grid-template-columns:1.2fr .8fr; gap:20px; align-items:center">
+        <div>
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px">
+            <img src="assets/unlockhq_web.png" alt="Unlock HQ" style="height:42px; width:auto"/>
+            <h1 style="margin:0; font-size:28px">Escape Room #2: The Archives</h1>
+          </div>
+          <p class="muted" style="margin:6px 0 8px">A number‑forward challenge with dense reading. Find three codes hidden in ledgers, reports, and a numeric grid.</p>
+          <div class="progress" style="display:flex; gap:8px; flex-wrap:wrap">
+            <span class="pill" id="p1">Room 1</span>
+            <span class="pill" id="p2">Room 2</span>
+            <span class="pill" id="p3">Room 3</span>
+            <span class="pill" id="p4">Exit Door</span>
+          </div>
+          <p class="muted" style="margin-top:6px">Timer: <span id="timer">00:00</span></p>
+        </div>
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">How this one works</h3>
+          <ul class="muted" style="margin:0 0 0 18px">
+            <li>Each room yields a <b>4‑digit code</b>.</li>
+            <li>Hints are available if you get stuck.</li>
+            <li>Enter the three codes at the Exit Door.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ROOM 1: Ledger Math/Logic -->
+    <section id="r1" class="card pad" aria-label="Room 1: Ledger">
+      <div class="title"><span class="num">1</span><h2 style="margin:0">Records Ledger</h2></div>
+      <p class="muted">A page labeled <em>Q2 Maintenance</em> sits open. A sticky note reads: <em>“Total Column B, then subtract Row 4. Use absolute value. Four digits.”</em></p>
+      <div style="overflow:auto; margin-top:8px">
+        <table class="ledger" aria-label="ledger table">
+          <thead><tr><th style="min-width:140px">Item</th><th>B ($)</th><th>C ($)</th></tr></thead>
+          <tbody>
+            <tr><td>Filters</td><td>118</td><td>47</td></tr>
+            <tr><td>Coolant</td><td>236</td><td>52</td></tr>
+            <tr><td>Sensor Kits</td><td>405</td><td>90</td></tr>
+            <tr><td><mark>Calibration</mark></td><td><mark>329</mark></td><td>40</td></tr>
+            <tr><td>Spare Valves</td><td>212</td><td>76</td></tr>
+            <tr><td>Sealant</td><td>145</td><td>28</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details style="margin-top:10px"><summary>Hint</summary><p class="muted">Only use <b>Column B</b>. Row 4 is <em>Calibration = 329</em>. Add B, subtract 329, then zero‑pad to 4 digits if needed.</p></details>
+      <div class="row" style="max-width:560px; margin-top:8px">
+        <input id="ans1" inputmode="numeric" placeholder="enter 4 digits" maxlength="4" />
+        <button class="btn" id="btn1">Unlock</button>
+      </div>
+      <p class="muted" id="msg1" style="margin-top:8px"></p>
+    </section>
+
+    <!-- ROOM 2: Research Report (reading heavy number extraction) -->
+    <section id="r2" class="card pad locked" aria-label="Room 2: Report" style="position:relative">
+      <div class="veil"><span class="badge">Locked – finish Room 1</span></div>
+      <div class="title"><span class="num">2</span><h2 style="margin:0">Research Report</h2></div>
+      <p class="muted">An  internal memo with scattered highlights. The margin note says: <em>“Numbers hide inside TERMS in ALL CAPS. Keep order, skip everything else.”</em></p>
+      <pre class="doc" id="report">
+PROJECT ORION – STATUS BRIEF
+
+During PHASEONE, nine prototypes were evaluated. IN TOTAL, four failed on thermal limits.
+In PHASETWO, five units passed. QA flagged issue #A17 but QA TEAM cleared it.
+For PHASEALPHA, two auxiliary pumps (P2) stabilized FLOWRATE; ETA shifted by three days.
+The BOARD approved SERIESBETA subject to METRICX thresholds and ISO9001 review.
+Note: The TEAM agreed that CODELOCK sequence should reflect METRICX.
+      </pre>
+      <details><summary>Hint</summary><p class="muted">Look only at fully capitalized <em>words</em> and search them for <em>digits hidden inside</em> (e.g., <code>PHASEONE</code> → 1). Keep digits in the order they appear while you read top‑to‑bottom.</p></details>
+      <div class="row" style="max-width:560px; margin-top:8px">
+        <input id="ans2" inputmode="numeric" placeholder="enter 4 digits" maxlength="4" />
+        <button class="btn" id="btn2">Unlock</button>
+      </div>
+      <p class="muted" id="msg2" style="margin-top:8px"></p>
+    </section>
+
+    <!-- ROOM 3: Numeric Grid (diagonal primes) -->
+    <section id="r3" class="card pad locked" aria-label="Room 3: Grid" style="position:relative">
+      <div class="veil"><span class="badge">Locked – finish Room 2</span></div>
+      <div class="title"><span class="num">3</span><h2 style="margin:0">Coordinate Grid</h2></div>
+      <p class="muted">A 5×5 grid glows. A plaque reads: <em>“The code is the diagonal of primes (↘). Replace non‑primes by 0 in your head.”</em></p>
+      <div class="grid5" id="grid" style="margin-top:8px"></div>
+      <details><summary>Hint</summary><p class="muted">Read from top‑left to bottom‑right: only keep the prime values (2,3,5,7,11,13,17,19...). Use the 1st, 2nd, 3rd, 4th diagonal cells.</p></details>
+      <div class="row" style="max-width:560px; margin-top:8px">
+        <input id="ans3" inputmode="numeric" placeholder="enter 4 digits" maxlength="4" />
+        <button class="btn" id="btn3">Unlock</button>
+      </div>
+      <p class="muted" id="msg3" style="margin-top:8px"></p>
+    </section>
+
+    <!-- EXIT DOOR -->
+    <section id="exit" class="card pad locked" aria-label="Exit" style="position:relative">
+      <div class="veil"><span class="badge">Locked – finish Room 3</span></div>
+      <div class="title"><span class="num">4</span><h2 style="margin:0">Vault Access</h2></div>
+      <p class="muted">Enter the three 4‑digit codes to open the Archives vault.</p>
+      <div class="row" style="max-width:560px">
+        <input id="k1" placeholder="Room 1" maxlength="4" />
+        <input id="k2" placeholder="Room 2" maxlength="4" />
+      </div>
+      <div class="row" style="max-width:560px; margin-top:8px">
+        <input id="k3" placeholder="Room 3" maxlength="4" />
+        <button class="btn" id="open">Open Vault</button>
+      </div>
+      <p class="muted" id="doorMsg" style="margin-top:8px"></p>
+      <pre class="doc" id="flag" style="display:none; margin-top:12px">ESCAPE{ARCHIVES-CRACKED}</pre>
+    </section>
+
+    <section class="muted" style="margin:26px 0 60px">
+      <details>
+        <summary>Admin quick-edit</summary>
+        <p>Edit the <code>ARC</code> object below to change answers, codes, or the grid values. This file is standalone.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="muted wrap" style="text-align:center; margin-bottom:26px">
+    <small>© <span id="year"></span> Unlock HQ • The Archives</small>
+  </footer>
+
+  <script>
+    // ===== Editable config =====
+    const ARC = {
+      // Room 1: sum of Column B minus row 4 (Calibration = 329)
+      ledgerB: [118,236,405,329,212,145],
+      r1Code: null, // computed at runtime
+      // Room 2: digits hidden inside ALL-CAPS tokens in order
+      // We'll parse digits embedded in words like PHASEONE (→1), SERIESBETA (→) etc
+      r2Code: null, // computed at runtime from the report text
+      // Room 3: diagonal primes → take value if prime else 0; use first 4 diagonal cells
+      grid: [
+        [ 4, 2,16, 9,25],
+        [21,11, 8,14, 6],
+        [10,12, 5,18,27],
+        [22, 7,30,13,20],
+        [24,26,28,32,17]
+      ],
+      r3Code: null,
+      finalFlag: 'ESCAPE{ARCHIVES-CRACKED}'
+    };
+
+    // Compute r1 from ledger: sum(B) - row4
+    (function(){ const sumB = ARC.ledgerB.reduce((a,b)=>a+b,0); const row4 = ARC.ledgerB[3]; const v = Math.abs(sumB - row4); ARC.r1Code = String(v).padStart(4,'0'); })();
+
+    // Compute r2 by scanning ALL-CAPS tokens and extracting digits embedded in them
+    (function(){
+      const text = document.getElementById('report').textContent;
+      const tokens = text.split(/\s+/).filter(w=>/^[A-Z0-9#]+$/.test(w));
+      const digits = [];
+      for(const t of tokens){
+        // map common words with numbers: ONE→1 TWO→2 THREE→3 FOUR→4 FIVE→5 SIX→6 SEVEN→7 EIGHT→8 NINE→9 ZERO→0 ALPHA→1 BETA→2 GAMMA→3
+        const map = {ONE:1,TWO:2,THREE:3,FOUR:4,FIVE:5,SIX:6,SEVEN:7,EIGHT:8,NINE:9,ZERO:0,ALPHA:1,BETA:2,GAMMA:3};
+        // first: embedded Arabic numerals
+        const m = t.match(/\d/g); if(m) digits.push(...m.map(Number));
+        // then: word-number hints
+        for(const [k,val] of Object.entries(map)){
+          if(t.includes(k)) digits.push(val);
+        }
+        if(digits.length>=4) break; // keep first four as the code
+      }
+      ARC.r2Code = (digits.slice(0,4).join('')||'0000').padEnd(4,'0');
+    })();
+
+    // Compute r3 from diagonal primes (first 4 diagonal cells)
+    (function(){
+      const diag = [ARC.grid[0][0], ARC.grid[1][1], ARC.grid[2][2], ARC.grid[3][3]];
+      const isPrime = n=>{ if(n<2) return false; for(let i=2;i*i<=n;i++) if(n%i===0) return false; return true; };
+      const code = diag.map(n=> isPrime(n)? n%10 : 0); // keep last digit for multi-digit primes
+      ARC.r3Code = code.join('');
+    })();
+
+    // Helpers
+    const $ = s => document.querySelector(s);
+    const unlock = id => { const s=$(id); s.classList.remove('locked'); s.querySelector('.veil')?.remove(); };
+    const markDone = n => { const p=$('#p'+n); p?.classList.add('done'); p && (p.textContent = (n<4?`Room ${n}`:'Exit Door')+' ✓'); };
+
+    // Timer
+    const t0 = Date.now(); const tEl = document.getElementById('timer'); setInterval(()=>{ const s=Math.floor((Date.now()-t0)/1000); const m=Math.floor(s/60), r=s%60; tEl.textContent=`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }, 1000);
+
+    // Build the numeric grid UI
+    (function(){ const root = document.getElementById('grid'); ARC.grid.forEach(row=> row.forEach(n=>{ const d=document.createElement('div'); d.className='cell'; d.textContent=n; root.appendChild(d); })); })();
+
+    // Room 1 check
+    document.getElementById('btn1').addEventListener('click',()=>{
+      const v = document.getElementById('ans1').value.trim();
+      if(v===ARC.r1Code){ document.getElementById('msg1').innerHTML = `Correct. Code: <b>${ARC.r1Code}</b>`; markDone(1); unlock('#r2'); }
+      else document.getElementById('msg1').textContent = 'Nope.';
+    });
+
+    // Room 2 check
+    document.getElementById('btn2').addEventListener('click',()=>{
+      const v = document.getElementById('ans2').value.trim();
+      if(v===ARC.r2Code){ document.getElementById('msg2').innerHTML = `Correct. Code: <b>${ARC.r2Code}</b>`; markDone(2); unlock('#r3'); }
+      else document.getElementById('msg2').textContent = 'Nope.';
+    });
+
+    // Room 3 check
+    document.getElementById('btn3').addEventListener('click',()=>{
+      const v = document.getElementById('ans3').value.trim();
+      if(v===ARC.r3Code){ document.getElementById('msg3').innerHTML = `Correct. Code: <b>${ARC.r3Code}</b>`; markDone(3); unlock('#exit'); }
+      else document.getElementById('msg3').textContent = 'Nope.';
+    });
+
+    // Exit door
+    document.getElementById('open').addEventListener('click',()=>{
+      const expect = [ARC.r1Code, ARC.r2Code, ARC.r3Code];
+      const got = [$('#k1').value,$('#k2').value,$('#k3').value].map(s=>s.trim());
+      if(got.join('|')===expect.join('|')){ document.getElementById('doorMsg').textContent = 'Vault unlocked!'; const f=$('#flag'); f.textContent = ARC.finalFlag; f.style.display='block'; markDone(4); }
+      else { document.getElementById('doorMsg').textContent = 'Codes incorrect.'; }
+    });
+
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Expose codes in console for testing (comment out for production)
+    console.log('[ARC Codes]', {r1:ARC.r1Code, r2:ARC.r2Code, r3:ARC.r3Code});
+  </script>
+</body>
+</html>
