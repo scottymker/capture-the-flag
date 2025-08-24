@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Playground • CTF & Escape Room</title>
+  <meta name="description" content="Choose your challenge: Capture the Flag or the Secret Lab Escape Room." />
+  <meta name="color-scheme" content="dark light" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23fff' d='M12 8h6v48h-6z'/%3E%3Cpath fill='%23fff' d='M18 10c8 0 8 6 16 6s8-6 16-6v18c-8 0-8 6-16 6s-8-6-16-6z'/%3E%3C/svg%3E"/>
+  <style>
+    :root{
+      --bg:#070b16; --ink:#e9ecff; --muted:#9aa3c7; --accent:#7cf3c8; --accent2:#6cc8ff; --card:#0e1633; --border:#1a2450;
+      --radius:18px; --shadow:0 10px 40px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink); background:radial-gradient(1000px 600px at 10% 10%,#0f1b3e 0%,#070b16 55%,#050812 100%) fixed; overflow-x:hidden}
+    header{position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(7,11,22,.85), rgba(7,11,22,0)); backdrop-filter:saturate(130%) blur(6px)}
+    .wrap{max-width:1080px; margin:0 auto; padding:22px}
+
+    /* Starfield background canvas */
+    #stars{position:fixed; inset:0; z-index:-1; filter:contrast(120%)}
+
+    .hero{display:grid; grid-template-columns:1.2fr .8fr; gap:22px; align-items:center}
+    h1{margin:6px 0 8px; font-size: clamp(28px, 4vw, 44px)}
+    .muted{color:var(--muted)}
+    .tag{display:inline-grid; place-items:center; font-weight:800; border:1px solid var(--border); background:#0a1230; color:var(--muted); height:28px; padding:0 10px; border-radius:999px}
+
+    .cta{display:inline-flex; gap:10px; align-items:center; padding:11px 14px; border-radius:12px; border:1px solid #1f2a55; background:linear-gradient(180deg,#7cf3c866,#7cf3c833); color:#031b13; font-weight:800; text-decoration:none}
+    .cta svg{width:18px;height:18px}
+
+    .grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:22px; margin:28px 0}
+    .card{position:relative; background:linear-gradient(180deg,var(--card),#0a1129); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+    .card::before{content:""; position:absolute; inset:-30%; background:conic-gradient(from 180deg at 50% 50%, transparent 0 70%, rgba(124,243,200,.08) 75%, transparent 85%); filter:blur(12px); transition:transform .8s ease}
+    .card:hover::before{transform:rotate(25deg)}
+    .card a{display:block; color:inherit; text-decoration:none}
+    .pad{padding:20px}
+
+    .title{display:flex; align-items:center; gap:10px}
+    .flag{width:22px; height:22px}
+    .maze{width:22px; height:22px}
+
+    .meta{display:flex; gap:12px; flex-wrap:wrap; margin-top:8px}
+    .meta .pill{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0a1230; color:var(--muted); font-weight:700}
+
+    footer{opacity:.85}
+
+    /* Responsive */
+    @media (max-width: 860px){ .hero{grid-template-columns:1fr} .grid{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <header>
+    <div class="wrap">
+      <div class="hero">
+        <div>
+          <span class="tag">Games Hub</span>
+          <h1>Pick your challenge</h1>
+          <p class="muted">Short, punchy, and ready to deploy. Choose <b>Capture the Flag</b> for a code-hunt gauntlet or try the <b>Secret Lab Escape Room</b> for a story-driven sprint.</p>
+          <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap">
+            <a class="cta" href="#modes" aria-describedby="modes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M9 18l6-6-6-6"/></svg> Explore modes</a>
+            <a class="cta" href="ctf.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 22V4h6l2 2h8v12"/><path d="M10 12h4"/><path d="M10 16h8"/></svg> Jump to CTF</a>
+          </div>
+        </div>
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">What’s included</h3>
+          <ul class="muted" style="margin:0 0 8px 18px">
+            <li>Fast single-page games (no build tools)</li>
+            <li>Keyboard-friendly & mobile-ready</li>
+            <li>Customizable puzzles and flags</li>
+          </ul>
+          <p class="muted">Deploy on Netlify / Cloudflare Pages / GitHub Pages.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" id="modes" tabindex="-1">
+    <div class="grid">
+      <!-- CTF card -->
+      <div class="card">
+        <a href="ctf.html" aria-label="Open Capture the Flag">
+          <div class="pad">
+            <div class="title">
+              <svg class="flag" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M4 3h2v18H4z"/><path d="M6 4c3 0 3 2 6 2s3-2 6-2v8c-3 0-3 2-6 2s-3-2-6-2z"/></svg>
+              <h2 style="margin:0">Capture the Flag</h2>
+            </div>
+            <p class="muted">Puzzle gauntlet with codes: word path, tic‑tac‑toe bot, spot‑the‑difference, jumble, and more.</p>
+            <div class="meta">
+              <span class="pill">Solo / Teams</span>
+              <span class="pill">10–20 min</span>
+              <span class="pill">Beginner–Intermediate</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Escape Room card -->
+      <div class="card">
+        <a href="escape-room.html" aria-label="Open Escape Room">
+          <div class="pad">
+            <div class="title">
+              <svg class="maze" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M3 3h8v2H5v6H3zM13 3h8v8h-2V5h-6zM3 13h8v8H3v-2h6v-6H3zM13 13h8v8h-8v-2h6v-6h-6z"/></svg>
+              <h2 style="margin:0">Secret Lab Escape Room</h2>
+            </div>
+            <p class="muted">Story‑driven: riddle on the desk, lights‑out console, and a specimen vault spot‑the‑difference to reach the exit.</p>
+            <div class="meta">
+              <span class="pill">Narrative</span>
+              <span class="pill">10–15 min</span>
+              <span class="pill">Beginner</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <section class="card pad" style="margin:30px 0 60px">
+      <h3 style="margin:0 0 6px">Tips</h3>
+      <ul class="muted" style="margin:0 0 0 18px">
+        <li>Share the direct links: <code>/ctf.html</code> and <code>/escape-room.html</code>.</li>
+        <li>You can re‑word the cards and durations here in the homepage at any time.</li>
+        <li>Edit colors by tweaking the <code>:root</code> tokens near the top.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="wrap muted" style="margin-bottom:40px">
+    <small>© <span id="year"></span> Game Hub • Built for quick fun.</small>
+  </footer>
+
+  <script>
+    // Starfield (lightweight, respects reduced motion)
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    const starCount = 160; let stars = []; let w=0,h=0; let raf;
+    const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function resize(){ w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; stars = Array.from({length:starCount}, ()=>({ x:Math.random()*w, y:Math.random()*h, z: Math.random()*0.8 + 0.2, vx: (Math.random()*0.2+0.05), })); }
+    function tick(){ ctx.clearRect(0,0,w,h); for(const s of stars){ s.x -= s.vx * 60 * s.z * 0.016; if(s.x < -2) s.x = w+2; const r = (1.4 - s.z) * 1.2; ctx.globalAlpha = 0.6 + (1-s.z)*0.4; ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI*2); ctx.fillStyle = '#bcd2ff'; ctx.fill(); } raf = requestAnimationFrame(tick); }
+    function start(){ if(prefersReduce) return; resize(); cancelAnimationFrame(raf); tick(); }
+    window.addEventListener('resize', resize, {passive:true}); start();
+
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
