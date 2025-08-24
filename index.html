@@ -193,6 +193,95 @@
       </details>
     </section>
 
+  
+    <!-- ===================== LEVEL 2 ===================== -->
+    <section id="L2intro" class="card pad locked" style="position:relative; margin-top:34px">
+      <div class="veil"><span class="badge">Locked – finish Level 1 (enter correct codes & reveal flag)</span></div>
+      <h3>Level 2: The Next Gate</h3>
+      <p class="muted">Four fresh puzzles. Clear each to earn another 4‑character code, then combine them to reveal the Level 2 flag.</p>
+      <div class="progress" id="progress2">
+        <span class="pill" id="p5">Puzzle 5</span>
+        <span class="pill" id="p6">Puzzle 6</span>
+        <span class="pill" id="p7">Puzzle 7</span>
+        <span class="pill" id="p8">Puzzle 8</span>
+      </div>
+      <style>
+        /* Level 2 light styles (scoped-ish) */
+        .ws2{display:grid; grid-template-columns:repeat(10,32px); gap:6px; padding:10px; background:#0e1530; border:1px solid var(--border); border-radius:12px}
+        .ws2 .c{width:32px; height:32px; display:grid; place-items:center; border-radius:6px; user-select:none; font-weight:800; letter-spacing:.5px; background:#11193b; border:1px solid #27335d; cursor:pointer}
+        .ws2 .sel{outline:2px solid var(--accent); background:#0d2544}
+        .lo{display:grid; grid-template-columns:repeat(5,52px); gap:8px; padding:10px; background:#0e1530; border:1px solid var(--border); border-radius:12px; width:max-content}
+        .lo button{width:52px; height:52px; border-radius:10px; border:1px solid #27335d; background:#11193b; cursor:pointer}
+        .lo .on{background:#1f355f}
+        .mm{display:grid; grid-template-columns:repeat(4,90px); gap:10px; width:max-content; background:#0e1530; border:1px solid var(--border); border-radius:12px; padding:10px}
+        .mm button{height:90px; border-radius:10px; border:1px solid #27335d; background:#11193b; color:var(--ink); font-weight:800; cursor:pointer}
+        .mm .found{background:#153d2d; border-color:#1b6a4a}
+      </style>
+    </section>
+
+    <!-- Puzzle 5: Word Search (submit three hidden words) -->
+    <section id="s5" class="card pad locked" style="position:relative;">
+      <div class="veil"><span class="badge">Locked – open Level 2</span></div>
+      <div class="title"><span class="num">5</span><h3>Word Search: find 3 words</h3></div>
+      <p class="muted">Click letters to build a word, then press Submit. Words are adjacent paths (8‑direction). Target words: 5 letters each.</p>
+      <div class="ws2" id="ws2"></div>
+      <div class="center" style="margin-top:8px">
+        <button class="btn" id="ws2Submit">Submit Word</button>
+        <button class="btn" id="ws2Clear">Clear</button>
+        <span class="muted" id="ws2Msg"></span>
+      </div>
+    </section>
+
+    <!-- Puzzle 6: Lights Out (all off) -->
+    <section id="s6" class="card pad locked" style="position:relative;">
+      <div class="veil"><span class="badge">Locked – finish Puzzle 5</span></div>
+      <div class="title"><span class="num">6</span><h3>Lights Out: toggle to dark</h3></div>
+      <p class="muted">Toggle a cell flips itself and its neighbors. Turn all cells off.</p>
+      <div class="lo" id="lo"></div>
+      <p class="muted" id="loMsg" style="margin-top:8px"></p>
+    </section>
+
+    <!-- Puzzle 7: Memory Match (pair the glyphs) -->
+    <section id="s7" class="card pad locked" style="position:relative;">
+      <div class="veil"><span class="badge">Locked – finish Puzzle 6</span></div>
+      <div class="title"><span class="num">7</span><h3>Memory Match: 8 cards (4 pairs)</h3></div>
+      <div class="mm" id="mm"></div>
+      <p class="muted" id="mmMsg" style="margin-top:8px"></p>
+    </section>
+
+    <!-- Puzzle 8: Caesar Cipher (shift +7) -->
+    <section id="s8" class="card pad locked" style="position:relative;">
+      <div class="veil"><span class="badge">Locked – finish Puzzle 7</span></div>
+      <div class="title"><span class="num">8</span><h3>Caesar Cipher: decode the keyword</h3></div>
+      <p class="muted">Decode this message (Caesar shift +7). Enter the <b>keyword</b> (one word):</p>
+      <pre class="flag" style="margin:8px 0">Jvkl! Pzal h dlkza dvyk: DVYKVUL</pre>
+      <div class="row" style="max-width:520px">
+        <input id="caesarAns" placeholder="keyword" />
+        <button class="btn" id="caesarBtn">Check</button>
+      </div>
+      <p class="muted" id="caesarMsg" style="margin-top:8px"></p>
+    </section>
+
+    <!-- Level 2 Final Flag -->
+    <section id="final2" class="card pad locked" style="position:relative;">
+      <div class="veil"><span class="badge">Locked – finish Level 2 puzzles</span></div>
+      <div class="title"><span class="num">★</span><h3>Capture the Flag – Level 2</h3></div>
+      <p class="muted">Enter the four Level 2 codes:</p>
+      <div class="row" style="max-width:560px">
+        <input id="d1" placeholder="Code 5" maxlength="4"/>
+        <input id="d2" placeholder="Code 6" maxlength="4"/>
+      </div>
+      <div class="row" style="max-width:560px; margin-top:8px">
+        <input id="d3" placeholder="Code 7" maxlength="4"/>
+        <input id="d4" placeholder="Code 8" maxlength="4"/>
+      </div>
+      <div class="center" style="margin-top:12px">
+        <button class="btn" id="revealBtn2">Reveal Level 2 Flag</button>
+        <span id="flagMsg2" class="muted"></span>
+      </div>
+      <pre class="flag" id="flagBox2" style="margin-top:14px; display:none">FLAG{LEVEL-TWO-UNLOCKED}</pre>
+    </section>
+
   </main>
 
   <script>
@@ -445,6 +534,123 @@
 
     // Mark initial progress UI
     document.getElementById('p1').classList.add('pill');
+  </script>
+  <script>
+    // ===== Level 2 config =====
+    const L2 = {
+      ws2: {
+        grid: [
+          "S N A P X Z P U Z Z L E",
+          "E D I T Q W E R T Y U I",
+          "P H O T O A S D F G H J",
+          "C A M E R A K L Z X C V",
+          "B A C K U P B N M Q W E",
+          "T R I G G E R T O O L S",
+          "L I G H T S O U T G A M",
+          "M E M O R Y M A T C H X",
+          "C O D E C R A C K C A E",
+          "R I D D L E S U N I T S"
+        ],
+        words: ["SNAP","EDIT","PHOTO"], // any order
+        code: "W2S3"
+      },
+      lightsOut: {
+        size: 5, // 5x5
+        start: [1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1],
+        code: "L8O5"
+      },
+      memory: {
+        glyphs: ["★","◆","●","▲"], // 4 pairs, shuffled
+        code: "M7M7"
+      },
+      caesar: { shift: 7, keyword: "WORKDONE", code: "C7R7" },
+      finalFlag: "FLAG{LEVEL-TWO-UNLOCKED}"
+    };
+
+    const unlockL2 = () => { unlock('#L2intro'); unlock('#s5'); };
+    const done2 = (n) => { const p = document.getElementById('p'+n); if(p){ p.classList.add('done'); p.textContent = 'Puzzle '+n+' ✓'; } };
+
+    // ===== Hook Level 1 success to Level 2 unlock =====
+    (function hookL1(){
+      const btn = document.getElementById('revealBtn');
+      const msg = document.getElementById('flagMsg');
+      const old = btn.onclick; // not used (we used addEventListener), so rebind by listening instead
+      btn.addEventListener('click',()=>{
+        const got = [$('#c1').value, $('#c2').value, $('#c3').value, $('#c4').value].map(s=>s.trim().toUpperCase());
+        const expect = [CFG.wordPath.code, CFG.ttt.winCode, CFG.differences.code, CFG.jumble.code];
+        if(got.join('|')===expect.join('|')){ unlockL2(); msg.insertAdjacentHTML('beforeend',' — Level 2 unlocked!'); }
+      });
+    })();
+
+    // ===== Puzzle 5: Word Search 2 =====
+    (function initWS2(){
+      const gridEL = document.getElementById('ws2');
+      const msg = document.getElementById('ws2Msg');
+      const submit = document.getElementById('ws2Submit');
+      const clear = document.getElementById('ws2Clear');
+      const letters = L2.ws2.grid.map(r=>r.split(' '));
+      const target = new Set(L2.ws2.words);
+      const found = new Set();
+      const sel = [];
+      letters.forEach((row,y)=>row.forEach((ch,x)=>{
+        const d=document.createElement('div'); d.className='c'; d.textContent=ch; d.dataset.x=x; d.dataset.y=y;
+        d.addEventListener('click',()=>{
+          const cx=+d.dataset.x, cy=+d.dataset.y;
+          if(sel.length){ const prev = sel[sel.length-1]; const dx=Math.abs(prev.x-cx), dy=Math.abs(prev.y-cy); if(dx>1||dy>1){ msg.textContent='Not adjacent'; return; } }
+          d.classList.add('sel'); sel.push({x:cx,y:cy,el:d,ch}); msg.textContent = sel.map(s=>s.ch).join('');
+        }); gridEL.appendChild(d);
+      }));
+      function resetSel(){ sel.forEach(s=>s.el.classList.remove('sel')); sel.length=0; msg.textContent=''; }
+      submit.addEventListener('click',()=>{
+        const word = sel.map(s=>s.ch).join('');
+        if(target.has(word) && !found.has(word)){
+          sel.forEach(s=>{ s.el.classList.add('sel'); s.el.style.outline='2px solid #34d399'; });
+          found.add(word); msg.innerHTML = `Found: <b>${[...found].join(', ')}</b> (${found.size}/3)`;
+          if(found.size===3){ msg.innerHTML += ` — Code: <b>${L2.ws2.code}</b>`; markDone(5); unlock('#s6'); done2(5); }
+          resetSel();
+        } else { msg.textContent = 'Nope (try SNAP, EDIT, PHOTO)'; resetSel(); }
+      });
+      clear.addEventListener('click', resetSel);
+    })();
+
+    // ===== Puzzle 6: Lights Out =====
+    (function initLO(){
+      const root = document.getElementById('lo');
+      const msg = document.getElementById('loMsg');
+      const N = L2.lightsOut.size; const st = L2.lightsOut.start.slice();
+      function idx(x,y){ return y*N+x; }
+      function render(){ root.innerHTML=''; for(let y=0;y<N;y++){ for(let x=0;x<N;x++){ const i=idx(x,y); const b=document.createElement('button'); b.className= st[i]?'on':''; b.addEventListener('click',()=>toggle(x,y)); root.appendChild(b); } } }
+      function toggle(x,y){ const t=[[x,y],[x-1,y],[x+1,y],[x,y-1],[x,y+1]]; t.forEach(([a,b])=>{ if(a>=0&&a<N&&b>=0&&b<N){ const i=idx(a,b); st[i]=st[i]?0:1; }}); render(); check(); }
+      function check(){ if(st.every(v=>v===0)){ msg.innerHTML = `Cleared! Code: <b>${L2.lightsOut.code}</b>`; markDone(6); unlock('#s7'); done2(6); }}
+      render(); msg.textContent='Turn all cells off';
+    })();
+
+    // ===== Puzzle 7: Memory Match =====
+    (function initMM(){
+      const root=document.getElementById('mm'); const msg=document.getElementById('mmMsg');
+      const cards = [...L2.memory.glyphs, ...L2.memory.glyphs].sort(()=>Math.random()-0.5);
+      let open=[], found=0;
+      cards.forEach((g,i)=>{ const b=document.createElement('button'); b.dataset.g=g; b.textContent='?'; b.addEventListener('click',()=>flip(b)); root.appendChild(b); });
+      function flip(b){ if(b.classList.contains('found')||open.includes(b)||open.length===2) return; b.textContent=b.dataset.g; open.push(b); if(open.length===2){ setTimeout(()=>{
+        if(open[0].dataset.g===open[1].dataset.g){ open.forEach(x=>{x.classList.add('found'); x.disabled=true;}); found+=2; if(found===cards.length){ msg.innerHTML=`All pairs! Code: <b>${L2.memory.code}</b>`; markDone(7); unlock('#s8'); done2(7); } }
+        else { open.forEach(x=>x.textContent='?'); }
+        open=[]; }, 450); } }
+      msg.textContent='Find all pairs';
+    })();
+
+    // ===== Puzzle 8: Caesar =====
+    (function initCaesar(){
+      const btn=$('#caesarBtn'); const ans=$('#caesarAns'); const msg=$('#caesarMsg');
+      btn.addEventListener('click',()=>{ const v=ans.value.trim().toUpperCase(); if(v===L2.caesar.keyword){ msg.innerHTML=`Correct! Code: <b>${L2.caesar.code}</b>`; markDone(8); unlock('#final2'); done2(8); } else { msg.textContent='Nope'; }});
+    })();
+
+    // ===== Final 2 Reveal =====
+    (function initFinal2(){
+      const btn=$('#revealBtn2'); const msg=$('#flagMsg2'); const box=$('#flagBox2');
+      btn.addEventListener('click',()=>{ const got=[$('#d1').value,$('#d2').value,$('#d3').value,$('#d4').value].map(s=>s.trim().toUpperCase()); const expect=[L2.ws2.code, L2.lightsOut.code, L2.memory.code, L2.caesar.code];
+        if(got.join('|')===expect.join('|')){ msg.textContent='Success!'; box.textContent=L2.finalFlag; box.style.display='block'; } else { msg.textContent='Codes incorrect.'; box.style.display='none'; }
+      });
+    })();
   </script>
 </body>
 </html>
