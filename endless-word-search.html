@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Unlock HQ – Word Search (Endless)</title>
-  <meta name="description" content="Endless word search puzzles. Finish one, a fresh puzzle appears automatically." />
+  <title>Unlock HQ – Endless Word Search</title>
+  <meta name="description" content="Endless word search puzzles. Finish one, a fresh puzzle appears automatically. Mobile‑friendly layout." />
   <link rel="icon" href="assets/unlockhq_web.png" />
   <style>
     :root{ --bg:#070b16; --panel:#0d1326; --ink:#e8ecff; --muted:#9aa3c7; --accent:#7cf3c8; --border:#1b2446; --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35); }
@@ -19,10 +19,16 @@
 
     .top{display:grid; grid-template-columns:1.2fr .8fr; align-items:center; gap:16px}
     .stats{display:flex; gap:10px; flex-wrap:wrap}
-    .pill{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:var(--muted); font-weight:700}
+    .pill{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:#9aa3c7; font-weight:700}
 
-    .ws{display:grid; gap:6px; padding:12px; border:1px solid var(--border); background:#0b122c; border-radius:14px; width:max-content; touch-action:none}
-    .cell{width:34px; height:34px; display:grid; place-items:center; border-radius:8px; background:#0f193f; border:1px solid #27335d; font-weight:800; letter-spacing:.5px; user-select:none; cursor:pointer}
+    /* --- Mobile-first board layout --- */
+    .board{display:grid; grid-template-columns:1fr; gap:18px; align-items:start}
+    @media (min-width: 860px){ .board{ grid-template-columns: 1fr 280px; } }
+
+    /* Grid uses dynamic cell size so it never overflows */
+    #gridWrap{width:100%}
+    .ws{--cell: 34px; --gap:6px; display:grid; grid-template-columns:repeat(var(--n,12), var(--cell)); gap:var(--gap); padding:12px; border:1px solid var(--border); background:#0b122c; border-radius:14px; width:100%; touch-action:none}
+    .cell{width:var(--cell); height:var(--cell); display:grid; place-items:center; border-radius:8px; background:#0f193f; border:1px solid #27335d; font-weight:800; letter-spacing:.5px; user-select:none; cursor:pointer}
     .cell.sel{outline:2px solid var(--accent); background:#10244d}
     .cell.ok{background:#153d2d; border-color:#1b6a4a}
 
@@ -32,8 +38,6 @@
 
     .actions{display:flex; gap:10px; flex-wrap:wrap}
     .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#001a10; font-weight:800; border:none; border-radius:12px; padding:10px 14px; cursor:pointer}
-
-    @media (max-width: 860px){ .top{grid-template-columns:1fr} .cell{width:32px; height:32px} }
   </style>
 </head>
 <body>
@@ -60,8 +64,8 @@
   </header>
 
   <main class="wrap">
-    <div class="card pad" style="display:grid; grid-template-columns:1fr auto; gap:18px; align-items:start">
-      <div>
+    <div class="card pad board">
+      <div id="gridWrap">
         <div id="grid" class="ws" aria-label="word search grid"></div>
       </div>
       <aside>
@@ -94,7 +98,6 @@
     }, 1000); }
 
     // ===== Word placement =====
-    function choice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
     function randInt(n){ return Math.floor(Math.random()*n); }
     function pickWords(){
       const pool = [...CFG.bank];
@@ -123,60 +126,72 @@
       for(let y=0;y<CFG.size;y++) for(let x=0;x<CFG.size;x++) if(!grid[y][x]) grid[y][x]=letters[randInt(letters.length)];
     }
 
-    // ===== Build puzzle =====
+    // ===== Build & render puzzle =====
     let current = { grid:[], words:[], found:new Set(), sel:[] };
-    function newPuzzle(shuffleOnly=false){
-      if(!shuffleOnly){ puzzleCount++; $('#count').textContent = puzzleCount; }
-      $('#grid').innerHTML=''; $('#words').innerHTML='';
-      current = { grid: emptyGrid(), words: pickWords(), found:new Set(), sel:[] };
-      // place words (allow backwards randomly)
-      for(const base of current.words){ const w = Math.random()<0.5 ? base.split('').reverse().join('') : base; tryPlace(current.grid, w) || tryPlace(current.grid, base); }
-      fillRandom(current.grid);
-      // render grid
-      const gEl = $('#grid'); gEl.style.gridTemplateColumns = `repeat(${CFG.size}, 34px)`;
+
+    function computeCell(){
+      const wrap = document.getElementById('gridWrap');
+      const gap = 6; // match CSS --gap
+      const pad = 24; // inner padding + border breathing room
+      const available = wrap.clientWidth - pad; // best effort
+      const cell = Math.floor((available - gap*(CFG.size-1)) / CFG.size);
+      // clamp to sensible range
+      const px = Math.max(22, Math.min(cell, 44));
+      const gridEl = document.getElementById('grid');
+      gridEl.style.setProperty('--cell', px + 'px');
+      gridEl.style.setProperty('--n', CFG.size);
+    }
+
+    function renderGrid(){
+      const gEl = $('#grid');
+      gEl.innerHTML='';
+      computeCell();
       for(let y=0;y<CFG.size;y++) for(let x=0;x<CFG.size;x++){
         const d=document.createElement('div'); d.className='cell'; d.textContent=current.grid[y][x]; d.dataset.x=x; d.dataset.y=y;
         d.addEventListener('click',()=>handleSelect(d)); gEl.appendChild(d);
       }
+    }
+
+    function newPuzzle(shuffleOnly=false){
+      if(!shuffleOnly){ puzzleCount++; $('#count').textContent = puzzleCount; }
+      current = { grid: emptyGrid(), words: pickWords(), found:new Set(), sel:[] };
+      for(const base of current.words){ const w = Math.random()<0.5 ? base.split('').reverse().join('') : base; tryPlace(current.grid, w) || tryPlace(current.grid, base); }
+      fillRandom(current.grid);
+      renderGrid();
       // render words
-      const wEl = $('#words');
+      const wEl = $('#words'); wEl.innerHTML='';
       current.words.forEach(w=>{ const t=document.createElement('span'); t.className='word'; t.textContent=w; t.id=`w_${w}`; wEl.appendChild(t); });
       startTimer();
     }
 
-    // ===== Selection logic (click start & end cell on a straight line) =====
+    // Selection logic
+    function clearSel(keep=false){ if(!keep){ current.sel.forEach(c=>c.classList.remove('sel')); } current.sel=[]; }
     function handleSelect(cell){
       if(cell.classList.contains('ok')) return;
       if(current.sel.length===0){ cell.classList.add('sel'); current.sel=[cell]; return; }
       if(current.sel.length===1){
         const a=current.sel[0]; const b=cell; const ax=+a.dataset.x, ay=+a.dataset.y, bx=+b.dataset.x, by=+b.dataset.y;
         const dx=Math.sign(bx-ax), dy=Math.sign(by-ay);
-        // must be straight line
         if(!(dx===0 || dy===0 || Math.abs(bx-ax)===Math.abs(by-ay))){ clearSel(); return; }
-        // collect path
         const path=[]; let x=ax,y=ay; while(true){ path.push([x,y]); if(x===bx && y===by) break; x+=dx; y+=dy; if(!inBounds(x,y)) { path.length=0; break; } }
         if(path.length===0){ clearSel(); return; }
         const letters = path.map(([x,y])=>current.grid[y][x]).join('');
         const rev = letters.split('').reverse().join('');
         const hit = current.words.find(w=>!current.found.has(w) && (w===letters || w===rev));
         if(hit){
-          path.forEach(([x,y])=>{ const idx=y*CFG.size+x; const el=$('#grid').children[idx]; el.classList.remove('sel'); el.classList.add('ok'); });
+          // mark cells
+          const gEl=$('#grid');
+          path.forEach(([x,y])=>{ const idx=y*CFG.size+x; const el=gEl.children[idx]; el.classList.remove('sel'); el.classList.add('ok'); });
           current.found.add(hit); const tag=$(`#w_${hit}`); if(tag){ tag.classList.add('done'); tag.textContent=hit+' ✓'; }
           clearSel(true);
           checkDone();
-        } else {
-          clearSel();
-        }
+        } else { clearSel(); }
       }
     }
-    function clearSel(keep=false){ if(!keep){ current.sel.forEach(c=>c.classList.remove('sel')); } current.sel=[]; }
 
     function checkDone(){
       if(current.found.size === current.words.length){
-        // small celebration
-        const msg=document.createElement('div'); msg.textContent='Puzzle complete! Loading next…'; msg.style.marginTop='10px'; msg.className='muted';
-        document.querySelector('.card.pad').appendChild(msg);
-        setTimeout(()=>{ msg.remove(); newPuzzle(); }, 1500);
+        setTimeout(()=>{ newPuzzle(); }, 800);
       }
     }
 
@@ -186,6 +201,7 @@
 
     // Init
     newPuzzle();
+    window.addEventListener('resize', ()=>{ computeCell(); });
 
     // Footer year
     document.getElementById('year').textContent = new Date().getFullYear();
