@@ -1,151 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Unlock HQ – Endless Word Search</title>
-  <meta name="description" content="Endless word search puzzles. Finish one, a fresh puzzle appears automatically. Mobile‑friendly layout." />
+  <title>Unlock HQ • Endless Word Search</title>
   <link rel="icon" href="assets/unlockhq_web.png" />
   <style>
-    :root{ --bg:#070b16; --panel:#0d1326; --ink:#e8ecff; --muted:#9aa3c7; --accent:#7cf3c8; --border:#1b2446; --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35); }
+    :root{ --bg:#070b16; --ink:#e9ecff; --muted:#9aa3c7; --accent:#7cf3c8; --border:#1a2450; --radius:16px; --cell:30px; --gap:6px; --boardW: 360px; }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink); background:radial-gradient(1200px 700px at 10% 10%,#0f1b3e 0%,#070b16 55%,#050812 100%) fixed}
-    header{position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(7,11,22,.85), rgba(7,11,22,0)); backdrop-filter:saturate(130%) blur(6px)}
-    .wrap{max-width:1000px; margin:0 auto; padding:20px}
-    .card{background:linear-gradient(180deg,#0f1733,#0b1026); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
-    .pad{padding:18px}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink); background:#070b16; overflow-x:hidden}
+
+    .wrap{max-width:1000px; margin:0 auto; padding:18px}
+    .panel{background:linear-gradient(180deg,#0f1733,#0b1026); border:1px solid var(--border); border-radius:var(--radius)}
+
+    /* Width-sync */
+    .frame{ width:var(--boardW); max-width:var(--boardW); margin:0 auto; }
+
+    header{padding:14px 10px}
+    #hero{padding:16px; text-align:center}
+    #logo img{height:84px; width:auto; filter:drop-shadow(0 0 14px rgba(124,243,200,.6))}
+    h1{margin:10px 0 4px; font-size:clamp(28px,6vw,40px)}
     .muted{color:var(--muted)}
+    .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:12px 0}
+    .pill{padding:6px 12px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:var(--muted); font-weight:700}
+    .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#001a10; font-weight:800; border:none; border-radius:12px; padding:10px 16px; cursor:pointer; margin:4px}
 
-    .top{display:grid; grid-template-columns:1.2fr .8fr; align-items:center; gap:16px}
-    .stats{display:flex; gap:10px; flex-wrap:wrap}
-    .pill{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:#9aa3c7; font-weight:700}
-
-    /* --- Mobile-first board layout --- */
-    .board{display:grid; grid-template-columns:1fr; gap:18px; align-items:start}
-    @media (min-width: 860px){ .board{ grid-template-columns: 1fr 280px; } }
-
-    /* Grid uses dynamic cell size so it never overflows */
-    #gridWrap{width:100%}
-    .ws{--cell: 34px; --gap:6px; display:grid; grid-template-columns:repeat(var(--n,12), var(--cell)); gap:var(--gap); padding:12px; border:1px solid var(--border); background:#0b122c; border-radius:14px; width:100%; touch-action:none}
-    .cell{width:var(--cell); height:var(--cell); display:grid; place-items:center; border-radius:8px; background:#0f193f; border:1px solid #27335d; font-weight:800; letter-spacing:.5px; user-select:none; cursor:pointer}
-    .cell.sel{outline:2px solid var(--accent); background:#10244d}
-    .cell.ok{background:#153d2d; border-color:#1b6a4a}
-
-    .wordlist{display:flex; gap:8px; flex-wrap:wrap}
+    /* Word list between hero and grid */
+    #wordsWrap{padding:10px; text-align:center}
+    #words{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; width:var(--boardW); margin:0 auto}
     .word{padding:6px 10px; border-radius:999px; border:1px solid #27335d; background:#0f193f; font-weight:800}
     .word.done{background:#153d2d; border-color:#1b6a4a}
 
-    .actions{display:flex; gap:10px; flex-wrap:wrap}
-    .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#001a10; font-weight:800; border:none; border-radius:12px; padding:10px 14px; cursor:pointer}
+    /* Grid */
+    #grid{display:grid; gap:var(--gap); grid-template-columns:repeat(var(--n,10), var(--cell)); width:var(--boardW); margin:10px auto; touch-action:none}
+    .cell{aspect-ratio:1/1; width:var(--cell); display:grid; place-items:center; border-radius:8px; background:#0f193f; border:1px solid #27335d; font-weight:700; user-select:none; cursor:pointer}
+    .cell.sel{outline:2px solid var(--accent)}
+    .cell.ok{background:#153d2d; border-color:#1b6a4a}
+
+    footer{text-align:center; margin:26px 0; color:var(--muted)}
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <div class="card pad top">
-        <div>
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
-            <img src="assets/unlockhq_web.png" alt="Unlock HQ" style="height:40px; width:auto" />
-            <h1 style="margin:0; font-size:26px">Endless Word Search</h1>
-          </div>
-          <p class="muted" style="margin:6px 0 10px">Find all words in the grid. When you finish, a new puzzle loads automatically.</p>
-          <div class="stats">
-            <span class="pill">Puzzle <span id="count">1</span></span>
-            <span class="pill">Time <span id="timer">00:00</span></span>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn" id="new">New Puzzle</button>
-          <button class="btn" id="shuffle">Shuffle Words</button>
-        </div>
+  <header class="wrap">
+    <div id="hero" class="panel frame">
+      <div id="logo"><img src="assets/unlockhq_web.png" alt="Unlock HQ logo"></div>
+      <h1>Endless Word Search</h1>
+      <p class="muted">Find all words in the grid. When you finish, a new puzzle loads automatically.</p>
+      <div class="stats">
+        <span class="pill">Puzzle <span id="count">1</span></span>
+        <span class="pill">Time <span id="timer">00:00</span></span>
+      </div>
+      <div>
+        <button class="btn" id="new">New Puzzle</button>
+        <button class="btn" id="shuffle">Shuffle Words</button>
       </div>
     </div>
   </header>
 
   <main class="wrap">
-    <div class="card pad board">
-      <div id="gridWrap">
-        <div id="grid" class="ws" aria-label="word search grid"></div>
-      </div>
-      <aside>
-        <h3 style="margin:0 0 6px">Find these words</h3>
-        <div id="words" class="wordlist"></div>
-      </aside>
-    </div>
+    <section id="wordsWrap" class="frame">
+      <h3 style="margin:0 0 8px">Find these words</h3>
+      <div id="words"></div>
+    </section>
+    <section class="frame">
+      <div id="grid"></div>
+    </section>
   </main>
 
-  <footer class="wrap muted" style="text-align:center; margin:20px 0 30px">
-    <small>© <span id="year"></span> Unlock HQ • Word Search</small>
-  </footer>
+  <footer>© <span id="year"></span> Unlock HQ • Word Search</footer>
 
   <script>
-    // ===== Config =====
-    const CFG = {
-      size: 12,             // grid size (NxN)
-      perPuzzle: 7,         // words per puzzle
-      bank: [
-        'unlock','cipher','puzzle','escape','lab','matrix','grid','prime','code','letter','search','random','portal','vault','timer','hidden','vector','button','answer','clue','logic','number','record','ledger','report','beta','alpha','gamma','sigma','delta','theta','omega','labcoat','sensor','camera','riddle','locker','agent','signal','server','client','cookie','token','branch','commit','deploy','stripe','netlify','tunnel','router'
-      ]
-    };
+    const CFG = { size: 12, perPuzzle: 7, bank: ['unlock','cipher','puzzle','escape','matrix','grid','prime','code','letter','search','random','vault','timer','logic','number','record','report','alpha','gamma','delta','omega','sensor','camera','riddle','locker','signal','server','client','vector','router','branch','commit','deploy'] };
+    let puzzleCount=0,t0=0,timerId=null,current={grid:[],words:[],found:new Set(),sel:[]};
+    const $=s=>document.querySelector(s);
 
-    // ===== State =====
-    let puzzleCount = 0, t0 = 0, timerId = null;
-    const $ = s=>document.querySelector(s);
+    function startTimer(){ clearInterval(timerId); t0=Date.now(); timerId=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000),m=Math.floor(s/60),r=s%60; $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;},1000); }
 
-    function startTimer(){ clearInterval(timerId); t0 = Date.now(); timerId = setInterval(()=>{
-      const s=Math.floor((Date.now()-t0)/1000), m=Math.floor(s/60), r=s%60; $('#timer').textContent = `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
-    }, 1000); }
+    function randInt(n){return Math.floor(Math.random()*n);}    
+    function pickWords(){const pool=[...CFG.bank];const words=[];while(words.length<CFG.perPuzzle&&pool.length){const w=pool.splice(randInt(pool.length),1)[0];if(w.length<=CFG.size)words.push(w.toUpperCase());}return words;}
+    function emptyGrid(){return Array.from({length:CFG.size},()=>Array(CFG.size).fill(''));}
+    function inBounds(x,y){return x>=0&&y>=0&&x<CFG.size&&y<CFG.size;}
+    const DIRS=[[1,0],[0,1],[1,1],[-1,0],[0,-1],[-1,-1],[1,-1],[-1,1]];
+    function tryPlace(grid,word){const dirs=[...DIRS].sort(()=>Math.random()-0.5);for(const[dx,dy]of dirs){for(let attempt=0;attempt<80;attempt++){const sx=randInt(CFG.size),sy=randInt(CFG.size);let x=sx,y=sy,ok=true;for(const ch of word){if(!inBounds(x,y)){ok=false;break;}const g=grid[y][x];if(g&&g!==ch){ok=false;break;}x+=dx;y+=dy;}if(!ok)continue;x=sx;y=sy;for(const ch of word){grid[y][x]=ch;x+=dx;y+=dy;}return true;}}return false;}
+    function fillRandom(grid){const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';for(let y=0;y<CFG.size;y++)for(let x=0;x<CFG.size;x++)if(!grid[y][x])grid[y][x]=letters[randInt(letters.length)];}
 
-    // ===== Word placement =====
-    function randInt(n){ return Math.floor(Math.random()*n); }
-    function pickWords(){
-      const pool = [...CFG.bank];
-      const words=[]; while(words.length<CFG.perPuzzle && pool.length){ const w = pool.splice(randInt(pool.length),1)[0]; if(w.length<=CFG.size) words.push(w.toUpperCase()); }
-      return words;
-    }
-    function emptyGrid(){ return Array.from({length:CFG.size},()=>Array(CFG.size).fill('')); }
-    function inBounds(x,y){ return x>=0 && y>=0 && x<CFG.size && y<CFG.size; }
-    const DIRS = [ [1,0],[0,1],[1,1],[-1,0],[0,-1],[-1,-1],[1,-1],[-1,1] ];
-    function tryPlace(grid, word){
-      const dirs = [...DIRS].sort(()=>Math.random()-0.5);
-      for(const [dx,dy] of dirs){
-        for(let attempt=0; attempt<80; attempt++){
-          const sx = randInt(CFG.size), sy = randInt(CFG.size);
-          let x=sx, y=sy, ok=true;
-          for(const ch of word){ if(!inBounds(x,y)){ ok=false; break; } const g=grid[y][x]; if(g && g!==ch){ ok=false; break; } x+=dx; y+=dy; }
-          if(!ok) continue;
-          x=sx; y=sy; for(const ch of word){ grid[y][x]=ch; x+=dx; y+=dy; }
-          return true;
-        }
-      }
-      return false;
-    }
-    function fillRandom(grid){
-      const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      for(let y=0;y<CFG.size;y++) for(let x=0;x<CFG.size;x++) if(!grid[y][x]) grid[y][x]=letters[randInt(letters.length)];
-    }
-
-    // ===== Build & render puzzle =====
-    let current = { grid:[], words:[], found:new Set(), sel:[] };
-
-    function computeCell(){
-      const wrap = document.getElementById('gridWrap');
-      const gap = 6; // match CSS --gap
-      const pad = 24; // inner padding + border breathing room
-      const available = wrap.clientWidth - pad; // best effort
-      const cell = Math.floor((available - gap*(CFG.size-1)) / CFG.size);
-      // clamp to sensible range
-      const px = Math.max(22, Math.min(cell, 44));
-      const gridEl = document.getElementById('grid');
-      gridEl.style.setProperty('--cell', px + 'px');
-      gridEl.style.setProperty('--n', CFG.size);
+    function computeSizing(){
+      // compute cell size so board fits viewport nicely
+      const vw = Math.min(window.innerWidth, document.documentElement.clientWidth);
+      const maxW = Math.floor(vw * 0.94); // breathing room
+      const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 6;
+      // clamp cell size between 22 and 42px
+      let cell = Math.min(42, Math.floor((maxW - gap*(CFG.size-1)) / CFG.size));
+      cell = Math.max(22, cell);
+      const boardW = cell*CFG.size + gap*(CFG.size-1);
+      document.documentElement.style.setProperty('--cell', cell+'px');
+      document.documentElement.style.setProperty('--boardW', boardW+'px');
+      document.documentElement.style.setProperty('--n', CFG.size);
     }
 
     function renderGrid(){
-      const gEl = $('#grid');
-      gEl.innerHTML='';
-      computeCell();
+      const gEl = $('#grid'); gEl.innerHTML='';
       for(let y=0;y<CFG.size;y++) for(let x=0;x<CFG.size;x++){
         const d=document.createElement('div'); d.className='cell'; d.textContent=current.grid[y][x]; d.dataset.x=x; d.dataset.y=y;
         d.addEventListener('click',()=>handleSelect(d)); gEl.appendChild(d);
@@ -153,58 +108,38 @@
     }
 
     function newPuzzle(shuffleOnly=false){
-      if(!shuffleOnly){ puzzleCount++; $('#count').textContent = puzzleCount; }
-      current = { grid: emptyGrid(), words: pickWords(), found:new Set(), sel:[] };
-      for(const base of current.words){ const w = Math.random()<0.5 ? base.split('').reverse().join('') : base; tryPlace(current.grid, w) || tryPlace(current.grid, base); }
-      fillRandom(current.grid);
-      renderGrid();
-      // render words
-      const wEl = $('#words'); wEl.innerHTML='';
-      current.words.forEach(w=>{ const t=document.createElement('span'); t.className='word'; t.textContent=w; t.id=`w_${w}`; wEl.appendChild(t); });
-      startTimer();
+      if(!shuffleOnly){puzzleCount++;$('#count').textContent=puzzleCount;}
+      current={grid:emptyGrid(),words:pickWords(),found:new Set(),sel:[]};
+      for(const base of current.words){const w=Math.random()<0.5?base.split('').reverse().join(''):base;tryPlace(current.grid,w)||tryPlace(current.grid,base);} fillRandom(current.grid);
+      // words
+      const wEl=$('#words'); wEl.innerHTML=''; current.words.forEach(w=>{const t=document.createElement('span'); t.className='word'; t.textContent=w; t.id=`w_${w}`; wEl.appendChild(t);});
+      computeSizing(); renderGrid(); startTimer();
     }
 
-    // Selection logic
-    function clearSel(keep=false){ if(!keep){ current.sel.forEach(c=>c.classList.remove('sel')); } current.sel=[]; }
     function handleSelect(cell){
-      if(cell.classList.contains('ok')) return;
-      if(current.sel.length===0){ cell.classList.add('sel'); current.sel=[cell]; return; }
-      if(current.sel.length===1){
-        const a=current.sel[0]; const b=cell; const ax=+a.dataset.x, ay=+a.dataset.y, bx=+b.dataset.x, by=+b.dataset.y;
-        const dx=Math.sign(bx-ax), dy=Math.sign(by-ay);
-        if(!(dx===0 || dy===0 || Math.abs(bx-ax)===Math.abs(by-ay))){ clearSel(); return; }
-        const path=[]; let x=ax,y=ay; while(true){ path.push([x,y]); if(x===bx && y===by) break; x+=dx; y+=dy; if(!inBounds(x,y)) { path.length=0; break; } }
-        if(path.length===0){ clearSel(); return; }
-        const letters = path.map(([x,y])=>current.grid[y][x]).join('');
-        const rev = letters.split('').reverse().join('');
-        const hit = current.words.find(w=>!current.found.has(w) && (w===letters || w===rev));
-        if(hit){
-          // mark cells
-          const gEl=$('#grid');
-          path.forEach(([x,y])=>{ const idx=y*CFG.size+x; const el=gEl.children[idx]; el.classList.remove('sel'); el.classList.add('ok'); });
+      if(cell.classList.contains('ok'))return;
+      if(current.sel.length===0){cell.classList.add('sel');current.sel=[cell];return;}
+      if(current.sel.length===1){const a=current.sel[0]; const b=cell; const ax=+a.dataset.x, ay=+a.dataset.y, bx=+b.dataset.x, by=+b.dataset.y; const dx=Math.sign(bx-ax), dy=Math.sign(by-ay);
+        if(!(dx===0||dy===0||Math.abs(bx-ax)===Math.abs(by-ay))){clearSel();return;}
+        const path=[]; let x=ax,y=ay; while(true){path.push([x,y]); if(x===bx&&y===by)break; x+=dx; y+=dy; if(!inBounds(x,y)){path.length=0; break;}}
+        if(path.length===0){clearSel();return;}
+        const letters=path.map(([x,y])=>current.grid[y][x]).join(''); const rev=letters.split('').reverse().join('');
+        const hit=current.words.find(w=>!current.found.has(w)&&(w===letters||w===rev));
+        if(hit){ const gEl=$('#grid'); path.forEach(([x,y])=>{ const idx=y*CFG.size+x; const el=gEl.children[idx]; el.classList.remove('sel'); el.classList.add('ok'); });
           current.found.add(hit); const tag=$(`#w_${hit}`); if(tag){ tag.classList.add('done'); tag.textContent=hit+' ✓'; }
-          clearSel(true);
-          checkDone();
+          clearSel(true); checkDone();
         } else { clearSel(); }
       }
     }
+    function clearSel(keep=false){ if(!keep){ current.sel.forEach(c=>c.classList.remove('sel')); } current.sel=[]; }
+    function checkDone(){ if(current.found.size===current.words.length){ setTimeout(()=>newPuzzle(), 900); } }
 
-    function checkDone(){
-      if(current.found.size === current.words.length){
-        setTimeout(()=>{ newPuzzle(); }, 800);
-      }
-    }
+    document.getElementById('new').addEventListener('click',()=>newPuzzle());
+    document.getElementById('shuffle').addEventListener('click',()=>newPuzzle(true));
+    window.addEventListener('resize', computeSizing);
 
-    // Buttons
-    document.getElementById('new').addEventListener('click', ()=> newPuzzle());
-    document.getElementById('shuffle').addEventListener('click', ()=> newPuzzle(true));
-
-    // Init
     newPuzzle();
-    window.addEventListener('resize', ()=>{ computeCell(); });
-
-    // Footer year
-    document.getElementById('year').textContent = new Date().getFullYear();
+    document.getElementById('year').textContent=new Date().getFullYear();
   </script>
 </body>
 </html>
