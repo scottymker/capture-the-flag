@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unlock HQ – Word Search (Endless)</title>
+  <meta name="description" content="Endless word search puzzles. Finish one, a fresh puzzle appears automatically." />
+  <link rel="icon" href="assets/unlockhq_web.png" />
+  <style>
+    :root{ --bg:#070b16; --panel:#0d1326; --ink:#e8ecff; --muted:#9aa3c7; --accent:#7cf3c8; --border:#1b2446; --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35); }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink); background:radial-gradient(1200px 700px at 10% 10%,#0f1b3e 0%,#070b16 55%,#050812 100%) fixed}
+    header{position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(7,11,22,.85), rgba(7,11,22,0)); backdrop-filter:saturate(130%) blur(6px)}
+    .wrap{max-width:1000px; margin:0 auto; padding:20px}
+    .card{background:linear-gradient(180deg,#0f1733,#0b1026); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .pad{padding:18px}
+    .muted{color:var(--muted)}
+
+    .top{display:grid; grid-template-columns:1.2fr .8fr; align-items:center; gap:16px}
+    .stats{display:flex; gap:10px; flex-wrap:wrap}
+    .pill{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:var(--muted); font-weight:700}
+
+    .ws{display:grid; gap:6px; padding:12px; border:1px solid var(--border); background:#0b122c; border-radius:14px; width:max-content; touch-action:none}
+    .cell{width:34px; height:34px; display:grid; place-items:center; border-radius:8px; background:#0f193f; border:1px solid #27335d; font-weight:800; letter-spacing:.5px; user-select:none; cursor:pointer}
+    .cell.sel{outline:2px solid var(--accent); background:#10244d}
+    .cell.ok{background:#153d2d; border-color:#1b6a4a}
+
+    .wordlist{display:flex; gap:8px; flex-wrap:wrap}
+    .word{padding:6px 10px; border-radius:999px; border:1px solid #27335d; background:#0f193f; font-weight:800}
+    .word.done{background:#153d2d; border-color:#1b6a4a}
+
+    .actions{display:flex; gap:10px; flex-wrap:wrap}
+    .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#001a10; font-weight:800; border:none; border-radius:12px; padding:10px 14px; cursor:pointer}
+
+    @media (max-width: 860px){ .top{grid-template-columns:1fr} .cell{width:32px; height:32px} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="card pad top">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
+            <img src="assets/unlockhq_web.png" alt="Unlock HQ" style="height:40px; width:auto" />
+            <h1 style="margin:0; font-size:26px">Endless Word Search</h1>
+          </div>
+          <p class="muted" style="margin:6px 0 10px">Find all words in the grid. When you finish, a new puzzle loads automatically.</p>
+          <div class="stats">
+            <span class="pill">Puzzle <span id="count">1</span></span>
+            <span class="pill">Time <span id="timer">00:00</span></span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="new">New Puzzle</button>
+          <button class="btn" id="shuffle">Shuffle Words</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="card pad" style="display:grid; grid-template-columns:1fr auto; gap:18px; align-items:start">
+      <div>
+        <div id="grid" class="ws" aria-label="word search grid"></div>
+      </div>
+      <aside>
+        <h3 style="margin:0 0 6px">Find these words</h3>
+        <div id="words" class="wordlist"></div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="wrap muted" style="text-align:center; margin:20px 0 30px">
+    <small>© <span id="year"></span> Unlock HQ • Word Search</small>
+  </footer>
+
+  <script>
+    // ===== Config =====
+    const CFG = {
+      size: 12,             // grid size (NxN)
+      perPuzzle: 7,         // words per puzzle
+      bank: [
+        'unlock','cipher','puzzle','escape','lab','matrix','grid','prime','code','letter','search','random','portal','vault','timer','hidden','vector','button','answer','clue','logic','number','record','ledger','report','beta','alpha','gamma','sigma','delta','theta','omega','labcoat','sensor','camera','riddle','locker','agent','signal','server','client','cookie','token','branch','commit','deploy','stripe','netlify','tunnel','router'
+      ]
+    };
+
+    // ===== State =====
+    let puzzleCount = 0, t0 = 0, timerId = null;
+    const $ = s=>document.querySelector(s);
+
+    function startTimer(){ clearInterval(timerId); t0 = Date.now(); timerId = setInterval(()=>{
+      const s=Math.floor((Date.now()-t0)/1000), m=Math.floor(s/60), r=s%60; $('#timer').textContent = `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+    }, 1000); }
+
+    // ===== Word placement =====
+    function choice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+    function randInt(n){ return Math.floor(Math.random()*n); }
+    function pickWords(){
+      const pool = [...CFG.bank];
+      const words=[]; while(words.length<CFG.perPuzzle && pool.length){ const w = pool.splice(randInt(pool.length),1)[0]; if(w.length<=CFG.size) words.push(w.toUpperCase()); }
+      return words;
+    }
+    function emptyGrid(){ return Array.from({length:CFG.size},()=>Array(CFG.size).fill('')); }
+    function inBounds(x,y){ return x>=0 && y>=0 && x<CFG.size && y<CFG.size; }
+    const DIRS = [ [1,0],[0,1],[1,1],[-1,0],[0,-1],[-1,-1],[1,-1],[-1,1] ];
+    function tryPlace(grid, word){
+      const dirs = [...DIRS].sort(()=>Math.random()-0.5);
+      for(const [dx,dy] of dirs){
+        for(let attempt=0; attempt<80; attempt++){
+          const sx = randInt(CFG.size), sy = randInt(CFG.size);
+          let x=sx, y=sy, ok=true;
+          for(const ch of word){ if(!inBounds(x,y)){ ok=false; break; } const g=grid[y][x]; if(g && g!==ch){ ok=false; break; } x+=dx; y+=dy; }
+          if(!ok) continue;
+          x=sx; y=sy; for(const ch of word){ grid[y][x]=ch; x+=dx; y+=dy; }
+          return true;
+        }
+      }
+      return false;
+    }
+    function fillRandom(grid){
+      const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      for(let y=0;y<CFG.size;y++) for(let x=0;x<CFG.size;x++) if(!grid[y][x]) grid[y][x]=letters[randInt(letters.length)];
+    }
+
+    // ===== Build puzzle =====
+    let current = { grid:[], words:[], found:new Set(), sel:[] };
+    function newPuzzle(shuffleOnly=false){
+      if(!shuffleOnly){ puzzleCount++; $('#count').textContent = puzzleCount; }
+      $('#grid').innerHTML=''; $('#words').innerHTML='';
+      current = { grid: emptyGrid(), words: pickWords(), found:new Set(), sel:[] };
+      // place words (allow backwards randomly)
+      for(const base of current.words){ const w = Math.random()<0.5 ? base.split('').reverse().join('') : base; tryPlace(current.grid, w) || tryPlace(current.grid, base); }
+      fillRandom(current.grid);
+      // render grid
+      const gEl = $('#grid'); gEl.style.gridTemplateColumns = `repeat(${CFG.size}, 34px)`;
+      for(let y=0;y<CFG.size;y++) for(let x=0;x<CFG.size;x++){
+        const d=document.createElement('div'); d.className='cell'; d.textContent=current.grid[y][x]; d.dataset.x=x; d.dataset.y=y;
+        d.addEventListener('click',()=>handleSelect(d)); gEl.appendChild(d);
+      }
+      // render words
+      const wEl = $('#words');
+      current.words.forEach(w=>{ const t=document.createElement('span'); t.className='word'; t.textContent=w; t.id=`w_${w}`; wEl.appendChild(t); });
+      startTimer();
+    }
+
+    // ===== Selection logic (click start & end cell on a straight line) =====
+    function handleSelect(cell){
+      if(cell.classList.contains('ok')) return;
+      if(current.sel.length===0){ cell.classList.add('sel'); current.sel=[cell]; return; }
+      if(current.sel.length===1){
+        const a=current.sel[0]; const b=cell; const ax=+a.dataset.x, ay=+a.dataset.y, bx=+b.dataset.x, by=+b.dataset.y;
+        const dx=Math.sign(bx-ax), dy=Math.sign(by-ay);
+        // must be straight line
+        if(!(dx===0 || dy===0 || Math.abs(bx-ax)===Math.abs(by-ay))){ clearSel(); return; }
+        // collect path
+        const path=[]; let x=ax,y=ay; while(true){ path.push([x,y]); if(x===bx && y===by) break; x+=dx; y+=dy; if(!inBounds(x,y)) { path.length=0; break; } }
+        if(path.length===0){ clearSel(); return; }
+        const letters = path.map(([x,y])=>current.grid[y][x]).join('');
+        const rev = letters.split('').reverse().join('');
+        const hit = current.words.find(w=>!current.found.has(w) && (w===letters || w===rev));
+        if(hit){
+          path.forEach(([x,y])=>{ const idx=y*CFG.size+x; const el=$('#grid').children[idx]; el.classList.remove('sel'); el.classList.add('ok'); });
+          current.found.add(hit); const tag=$(`#w_${hit}`); if(tag){ tag.classList.add('done'); tag.textContent=hit+' ✓'; }
+          clearSel(true);
+          checkDone();
+        } else {
+          clearSel();
+        }
+      }
+    }
+    function clearSel(keep=false){ if(!keep){ current.sel.forEach(c=>c.classList.remove('sel')); } current.sel=[]; }
+
+    function checkDone(){
+      if(current.found.size === current.words.length){
+        // small celebration
+        const msg=document.createElement('div'); msg.textContent='Puzzle complete! Loading next…'; msg.style.marginTop='10px'; msg.className='muted';
+        document.querySelector('.card.pad').appendChild(msg);
+        setTimeout(()=>{ msg.remove(); newPuzzle(); }, 1500);
+      }
+    }
+
+    // Buttons
+    document.getElementById('new').addEventListener('click', ()=> newPuzzle());
+    document.getElementById('shuffle').addEventListener('click', ()=> newPuzzle(true));
+
+    // Init
+    newPuzzle();
+
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
