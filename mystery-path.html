@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unlock HQ • Mystery Path</title>
+  <link rel="icon" href="assets/unlockhq_web.png" />
+  <style>
+    :root{ --bg:#070b16; --ink:#e9ecff; --muted:#9aa3c7; --accent:#7cf3c8; --accent2:#6cc8ff; --card:#0e1633; --border:#1a2450; --radius:16px; --shadow:0 10px 40px rgba(0,0,0,.35) }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--ink); background:radial-gradient(1000px 600px at 10% 10%,#0f1b3e 0%,#070b16 55%,#050812 100%) fixed}
+    .wrap{max-width:980px; margin:0 auto; padding:18px}
+    header{position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(7,11,22,.85), rgba(7,11,22,0)); backdrop-filter:saturate(130%) blur(6px)}
+
+    .card{background:linear-gradient(180deg,var(--card),#0a1129); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .pad{padding:18px}
+    .muted{color:var(--muted)}
+
+    #brand{display:flex; gap:12px; align-items:center}
+    #brand img{height:46px; width:auto; filter:drop-shadow(0 0 12px rgba(124,243,200,.5))}
+
+    .hud{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+    .pill{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0b122c; color:var(--muted); font-weight:700}
+    .btn{background:linear-gradient(180deg,var(--accent),#4fd1b6); color:#02150f; font-weight:800; border:none; border-radius:12px; padding:10px 14px; cursor:pointer}
+
+    .story{display:grid; grid-template-columns:1fr 320px; gap:16px}
+    @media (max-width: 920px){ .story{grid-template-columns:1fr} }
+
+    #scene h2{margin:0 0 4px}
+    #text{white-space:pre-wrap; line-height:1.5}
+
+    .choices{display:grid; gap:10px; margin-top:12px}
+    .choice{display:flex; align-items:center; gap:10px; border:1px solid var(--border); background:#0b122c; padding:12px; border-radius:12px; cursor:pointer; text-align:left}
+    .choice.locked{opacity:.6; cursor:not-allowed}
+
+    .panel{background:#0b122c; border:1px solid var(--border); border-radius:12px; padding:12px}
+    .list{display:flex; gap:8px; flex-wrap:wrap}
+    .tag{padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#0f193f; color:var(--muted); font-weight:800}
+
+    .puzzle{margin-top:14px}
+    .row{display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center}
+    input[type="text"],input[type="number"]{height:44px; border-radius:10px; border:1px solid #27335d; background:#0d1533; color:var(--ink); padding:0 12px; font-weight:700}
+    details{margin-top:8px}
+
+    #end{display:none; text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="card pad" style="display:grid; grid-template-columns:1.2fr .8fr; gap:16px; align-items:center">
+        <div>
+          <div id="brand"><img src="assets/unlockhq_web.png" alt="Unlock HQ"><h1 style="margin:0">Mystery Path</h1></div>
+          <p class="muted" style="margin:6px 0 8px">An interactive choose‑your‑own‑path mini‑story. Solve light puzzles to unlock new branches. Progress is saved locally.</p>
+          <div class="hud">
+            <span class="pill">Scene: <b id="sceneId">—</b></span>
+            <span class="pill">Clues: <b id="clueCount">0</b></span>
+            <span class="pill">Time: <b id="timer">00:00</b></span>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
+          <button class="btn" id="restart">Restart</button>
+          <button class="btn" id="clear">Clear Save</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap story">
+    <section id="scene" class="card pad" aria-live="polite">
+      <h2 id="title">—</h2>
+      <div id="text" class="muted"></div>
+
+      <div id="puzzle" class="puzzle"></div>
+      <div id="choices" class="choices"></div>
+
+      <div id="end">
+        <h2>Escape Achieved!</h2>
+        <p class="muted">You reached a successful ending. Try alternate routes for hidden scenes.</p>
+      </div>
+    </section>
+
+    <aside class="card pad">
+      <div class="panel">
+        <h3 style="margin:0 0 6px">Inventory</h3>
+        <div id="inv" class="list"></div>
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <h3 style="margin:0 0 6px">Notes</h3>
+        <div id="notes" class="list"></div>
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <h3 style="margin:0 0 6px">About</h3>
+        <p class="muted" style="margin:0">This page is a <b>story runner</b>. Edit the <code>STORY</code> data at the bottom to create new chapters, puzzles, and endings. No build tools needed.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="wrap muted" style="text-align:center; margin:22px 0 30px">
+    <small>© <span id="year"></span> Unlock HQ • Mystery Path</small>
+  </footer>
+
+  <script>
+    // ========== Story definition ==========
+    // Each node has: id, title, text, gives (items/notes), puzzle, choices
+    // puzzle types supported here: riddle {answer}, keypad {code}, caesar {shift, cipherText}
+
+    const STORY = {
+      start: 'atrium',
+      nodes: {
+        atrium: {
+          title: 'HQ Atrium, 01:24 AM',
+          text: 'The building is empty. Motion lights hum. A glass door blocks the Security Wing. A sticky note on the door reads: “Prove you belong.”',
+          choices: [
+            { label: 'Examine the sticky note', to: 'note' },
+            { label: 'Try the glass door', to: 'doorA' }
+          ]
+        },
+        note: {
+          title: 'The Sticky Note',
+          text: 'Handwriting: “What walks on the ground with no legs, follows you in daylight, and vanishes at night?”',
+          puzzle: { type: 'riddle', answer: 'SHADOW', hint: 'It changes length as the sun moves.' },
+          gives: { notes: ['Riddle solved: SHADOW'] },
+          choices: [ { label: 'Return to atrium', to: 'atrium' }, { label: 'Approach the glass door', to: 'doorA', require: ['riddle:note'] } ]
+        },
+        doorA: {
+          title: 'Security Door A',
+          text: 'A card reader beeps. Below it, a keypad waits for 4 digits. Faint marker near the hinge: “MMDD”. The lobby calendar shows a date circled: 04/27.',
+          puzzle: { type: 'keypad', code: '0427', hint: 'Month + Day. Two digits each.' },
+          choices: [ { label: 'Enter Security Wing', to: 'wing', require: ['keypad:doorA'] }, { label: 'Back to atrium', to: 'atrium' } ]
+        },
+        wing: {
+          title: 'Security Wing',
+          text: 'You slip inside. A maintenance locker sits beside a terminal that scrolls: “Only those who read between letters may proceed.” A slip of paper displays: “FDHVDU VHFUHW”.',
+          puzzle: { type: 'caesar', shift: 3, cipherText: 'FDHVDU? No. Try the note: FDHVDU VHFUHW', hint: 'Shift letters backward by 3.' },
+          gives: { items: ['Keycard'], notes: ['Password: CAESAR SECRET'] },
+          choices: [ { label: 'Use the terminal', to: 'terminal', require: ['caesar:wing'] }, { label: 'Open the maintenance locker', to: 'locker' } ]
+        },
+        locker: {
+          title: 'Maintenance Locker',
+          text: 'Inside: a flashlight and an <i>Emergency Vent Map</i>. The flashlight looks charged.',
+          gives: { items: ['Flashlight', 'Vent Map'] },
+          choices: [ { label: 'Return to wing', to: 'wing' } ]
+        },
+        terminal: {
+          title: 'Access Terminal',
+          text: 'The login accepts “CAESAR SECRET”. A hatch opens revealing a dark service corridor. With a light, it looks crawlable.',
+          choices: [
+            { label: 'Enter the service corridor', to: 'corridor', requireItems: ['Flashlight'] },
+            { label: 'Look for another route', to: 'atrium' }
+          ]
+        },
+        corridor: {
+          title: 'Service Corridor',
+          text: 'Ducts and cables. The Vent Map shows two exits: LAB and ROOF. A keypad blocks the ROOF hatch; the LAB grate is loose.',
+          choices: [ { label: 'Head to LAB', to: 'lab' }, { label: 'Try to reach ROOF', to: 'roof', requireItems: ['Keycard'] } ]
+        },
+        lab: {
+          title: 'Prototype Lab',
+          text: 'Monitors glow. A note: “Flag is stored after successful exit.” A side door requires the Keycard.',
+          choices: [ { label: 'Swipe Keycard', to: 'final', requireItems: ['Keycard'] }, { label: 'Back to corridor', to: 'corridor' } ]
+        },
+        roof: {
+          title: 'Rooftop Hatch',
+          text: 'Wind howls. The lock asks for a 4‑digit code labelled “ALTI”. The Vent Map annotates: “Roof altitude in hundreds”. The blueprint margin says: 1200 ft.',
+          puzzle: { type: 'keypad', code: '1200', hint: 'Enter 1200' },
+          choices: [ { label: 'Climb to the roof', to: 'finalRoof', require: ['keypad:roof'] }, { label: 'Return', to: 'corridor' } ]
+        },
+        final: {
+          title: 'Lab Exit',
+          text: 'You step through the lab door. An intercom chirps: “Agent verified.”',
+          end: true,
+          flag: 'ESCAPE{MYSTERY-PATH-LAB}',
+          choices: [ { label: 'Restart', to: 'atrium' } ]
+        },
+        finalRoof: {
+          title: 'Rooftop',
+          text: 'City lights and an idling drone. A panel flashes: “Extraction confirmed.”',
+          end: true,
+          flag: 'ESCAPE{MYSTERY-PATH-ROOF}',
+          choices: [ { label: 'Restart', to: 'atrium' } ]
+        }
+      }
+    };
+
+    // ========== Engine ==========
+    const $ = s=>document.querySelector(s);
+    const invEl=$('#inv'), notesEl=$('#notes'), sceneIdEl=$('#sceneId'), clueEl=$('#clueCount');
+    const titleEl=$('#title'), textEl=$('#text'), choicesEl=$('#choices'), puzzleEl=$('#puzzle'), endEl=$('#end');
+
+    let save = JSON.parse(localStorage.getItem('mystery_path_save')||'null') || { here: STORY.start, items: [], notes: [], solved: {}, start: Date.now() };
+
+    // Timer
+    const tEl = document.getElementById('timer'); setInterval(()=>{ const s=Math.floor((Date.now()-save.start)/1000); const m=Math.floor(s/60), r=s%60; tEl.textContent=`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }, 1000);
+
+    function setHere(id){ save.here=id; localStorage.setItem('mystery_path_save', JSON.stringify(save)); render(); }
+
+    function grant(list, into){ if(!list) return; for(const v of list){ if(!into.includes(v)) into.push(v); } }
+
+    function markSolved(key){ save.solved[key]=true; localStorage.setItem('mystery_path_save', JSON.stringify(save)); }
+    function isSolved(key){ return !!save.solved[key]; }
+
+    function render(){
+      const node = STORY.nodes[save.here]; if(!node) return;
+      sceneIdEl.textContent = save.here; endEl.style.display='none';
+
+      // grants
+      grant(node?.gives?.items || [], save.items);
+      grant(node?.gives?.notes || [], save.notes);
+
+      titleEl.textContent = node.title || '—';
+      textEl.innerHTML = node.text || '';
+
+      // inventory/notes
+      invEl.innerHTML = save.items.map(v=>`<span class="tag">${v}</span>`).join('');
+      notesEl.innerHTML = save.notes.map(v=>`<span class="tag">${v}</span>`).join('');
+      clueEl.textContent = save.notes.length + save.items.length;
+
+      // puzzle
+      puzzleEl.innerHTML = ''; if(node.puzzle && !isSolved(nodeId(node))){ renderPuzzle(node); }
+
+      // choices
+      choicesEl.innerHTML='';
+      (node.choices||[]).forEach(ch=>{
+        const locked = isLocked(ch, node);
+        const btn = document.createElement('button');
+        btn.className = 'choice'+(locked?' locked':'');
+        btn.innerHTML = `<span>${ch.label}</span>`;
+        if(!locked){ btn.addEventListener('click', ()=> setHere(ch.to)); }
+        choicesEl.appendChild(btn);
+      });
+
+      if(node.end){ endEl.style.display='block'; puzzleEl.innerHTML = `<div class="panel" style="margin-top:10px"><b>Flag:</b> <code>${node.flag}</code></div>`; }
+    }
+
+    function nodeId(node){ // create a stable key for the node's puzzle
+      return Object.entries(STORY.nodes).find(([id, n])=> n===node)?.[0];
+    }
+
+    function isLocked(choice, node){
+      // solved requirements
+      if(choice.require){ for(const key of choice.require){ if(!isSolved(key)) return true; }
+      }
+      // inventory requirements
+      if(choice.requireItems){ for(const it of choice.requireItems){ if(!save.items.includes(it)) return true; } }
+      return false;
+    }
+
+    function renderPuzzle(node){
+      const p = node.puzzle; if(!p) return; const key = `${p.type}:${nodeId(node)}`;
+      const box = document.createElement('div'); box.className = 'panel';
+      if(p.type==='riddle'){
+        box.innerHTML = `<h3 style="margin:0 0 6px">Riddle</h3><p class="muted">${node.text.includes('“')?'':''}</p>
+          <div class='row'><input id='ans' placeholder='your answer' /><button class='btn' id='ok'>Submit</button></div>
+          <details><summary>Hint</summary><p class='muted'>${p.hint||''}</p></details>`;
+        puzzleEl.appendChild(box);
+        box.querySelector('#ok').addEventListener('click',()=>{
+          const v=box.querySelector('#ans').value.trim().toUpperCase();
+          if(v===p.answer){ markSolved(key); render(); }
+          else { shake(box); }
+        });
+      }
+      if(p.type==='keypad'){
+        box.innerHTML = `<h3 style="margin:0 0 6px">Keypad</h3><div class='row'><input id='ans' inputmode='numeric' maxlength='6' placeholder='4 digits' /><button class='btn' id='ok'>Unlock</button></div><details><summary>Hint</summary><p class='muted'>${p.hint||''}</p></details>`;
+        puzzleEl.appendChild(box);
+        box.querySelector('#ok').addEventListener('click',()=>{
+          const v=box.querySelector('#ans').value.trim(); if(v===String(p.code)){ markSolved(key); render(); } else shake(box);
+        });
+      }
+      if(p.type==='caesar'){
+        box.innerHTML = `<h3 style="margin:0 0 6px">Cipher (Caesar)&nbsp;<small class='muted'>(shift ${p.shift})</small></h3>
+          <p class='muted'><code>${p.cipherText}</code></p>
+          <div class='row'><input id='ans' placeholder='decoded phrase' /><button class='btn' id='ok'>Submit</button></div>
+          <details><summary>Hint</summary><p class='muted'>${p.hint||''}</p></details>`;
+        puzzleEl.appendChild(box);
+        box.querySelector('#ok').addEventListener('click',()=>{
+          const v=box.querySelector('#ans').value.trim().toUpperCase();
+          // simple check: CAESAR SECRET accepted
+          if(v==='CAESAR SECRET'){ markSolved(key); render(); } else shake(box);
+        });
+      }
+    }
+
+    function shake(el){ el.style.transition='transform .1s'; el.style.transform='translateX(3px)'; setTimeout(()=>{el.style.transform='translateX(-3px)'},60); setTimeout(()=>{el.style.transform='';},120); }
+
+    // Restart & clear
+    document.getElementById('restart').addEventListener('click',()=>{ save.here=STORY.start; localStorage.setItem('mystery_path_save', JSON.stringify(save)); render(); });
+    document.getElementById('clear').addEventListener('click',()=>{ localStorage.removeItem('mystery_path_save'); save = { here: STORY.start, items: [], notes: [], solved: {}, start: Date.now() }; render(); });
+
+    // Init
+    render();
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
